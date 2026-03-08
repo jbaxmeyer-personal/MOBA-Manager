@@ -58,9 +58,9 @@ const CONFIG = {
       thresholds: [2, 4],
       bonuses: [
         { mechanics: 8,  laning: 5 },
-        { mechanics: 20, laning: 12, teamfighting: 8 },
+        { mechanics: 16, laning: 10, teamfighting: 6 },
       ],
-      desc: ['(2) +8 Mech, +5 Lan', '(4) +20 Mech, +12 Lan, +8 TF'],
+      desc: ['(2) +8 Mech, +5 Lan', '(4) +16 Mech, +10 Lan, +6 TF'],
     },
     Shotcaller: {
       icon: '📣',
@@ -78,9 +78,9 @@ const CONFIG = {
       thresholds: [2, 3],
       bonuses: [
         { mechanics: 12, clutch: 6 },
-        { mechanics: 25, clutch: 15, laning: 8 },
+        { mechanics: 20, clutch: 12, laning: 8 },
       ],
-      desc: ['(2) +12 Mech, +6 CLU', '(3) +25 Mech, +15 CLU'],
+      desc: ['(2) +12 Mech, +6 CLU', '(3) +20 Mech, +12 CLU, +8 Lan'],
     },
     Veteran: {
       icon: '🎖️',
@@ -98,9 +98,9 @@ const CONFIG = {
       thresholds: [2, 4],
       bonuses: [
         { clutch: 8,  mechanics: 5 },
-        { clutch: 18, mechanics: 12, laning: 10 },
+        { clutch: 16, mechanics: 10, laning: 8 },
       ],
-      desc: ['(2) +8 CLU, +5 Mech', '(4) +18 CLU, +12 Mech'],
+      desc: ['(2) +8 CLU, +5 Mech', '(4) +16 CLU, +10 Mech, +8 Lan'],
     },
     Utility: {
       icon: '🛡️',
@@ -140,7 +140,7 @@ const CONFIG = {
     2: { bonusPct: 6,  desc: '+6% all stats' },
     3: { bonusPct: 12, desc: '+12% all stats' },
     4: { bonusPct: 18, desc: '+18% all stats' },
-    5: { bonusPct: 25, desc: '+25% all stats' },
+    5: { bonusPct: 20, desc: '+20% all stats' },
   },
   REGION_COLORS: {
     Korea: '#4fc3f7', China: '#ff7043', EU: '#ab47bc',

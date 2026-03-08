@@ -241,7 +241,7 @@ function simulateLateGame(blue, red, bR, rR, advIn, events, drakes, dIdx) {
   // Clutch comeback check
   const comebackSide = !finalBlue; // losing side has clutch chance
   const clutchRating = comebackSide ? bR.clutchRating : rR.clutchRating;
-  const comebackHappens = chance(clamp((clutchRating - 60) * 0.8, 5, 35));
+  const comebackHappens = chance(clamp((clutchRating - 60) * 0.7, 4, 24));
 
   let blueWins;
   if (comebackHappens) {
