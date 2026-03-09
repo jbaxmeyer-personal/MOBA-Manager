@@ -517,3 +517,81 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
 .kda-table td:nth-child(3) { color: #2ecc71; font-weight: 600; }  /* K green */
 .kda-table td:nth-child(4) { color: #e74c3c; }                    /* D red */
 .kda-table td:nth-child(5) { color: #4fc3f7; }                    /* A blue */
+
+/* ── Map Visualization ───────────────────────────────────────────────────── */
+.pbp-body-wrap {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-top: 6px;
+}
+.pbp-map-col {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+.pbp-map-svg {
+  width: 260px;
+  height: 260px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: block;
+}
+.pbp-event-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* Player dots */
+.map-dot {
+  transition: cx 0.85s cubic-bezier(0.4,0,0.2,1),
+              cy 0.85s cubic-bezier(0.4,0,0.2,1),
+              opacity 0.4s ease;
+}
+.map-dot-blue {
+  fill: #4fc3f7;
+  stroke: #083050;
+  stroke-width: 2;
+}
+.map-dot-red {
+  fill: #ff7b7b;
+  stroke: #500808;
+  stroke-width: 2;
+}
+.map-dot.map-dot-dead {
+  opacity: 0.15;
+  fill: #444 !important;
+}
+/* Labels */
+.map-dot-lbl {
+  font-size: 8px;
+  font-weight: 800;
+  fill: #05090f;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+  transition: x 0.85s cubic-bezier(0.4,0,0.2,1),
+              y 0.85s cubic-bezier(0.4,0,0.2,1),
+              opacity 0.4s ease;
+}
+.map-dot-lbl.map-dot-dead { opacity: 0.1; }
+/* Skip mode: disable transitions for instant skip */
+.pbp-map-svg.map-skip .map-dot,
+.pbp-map-svg.map-skip .map-dot-lbl { transition: none !important; }
+/* Legend */
+.pbp-map-legend {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+}
+.map-leg-blue { color: #4fc3f7; }
+.map-leg-red  { color: #ff7b7b; }
+.map-leg-dim  { color: var(--text-dim); }
+/* Responsive: stack vertically on narrow screens */
+@media (max-width: 680px) {
+  .pbp-body-wrap { flex-direction: column; }
+  .pbp-map-svg   { width: 220px; height: 220px; }
+}

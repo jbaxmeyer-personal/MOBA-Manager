@@ -169,18 +169,117 @@
         </div>
       </div>
 
-      <div class="pbp-controls">
-        <button id="btn-skip-pbp" class="btn-secondary" style="display:none">⏩ Skip to End</button>
-      </div>
+      <!-- Two-column body: map left, events right -->
+      <div class="pbp-body-wrap">
 
-      <!-- Events scroll area -->
-      <div id="pbp-events" class="pbp-events"></div>
+        <!-- Map column -->
+        <div class="pbp-map-col">
+          <svg id="pbp-map-svg" class="pbp-map-svg" viewBox="0 0 300 300" preserveAspectRatio="xMidYMid meet">
 
-      <!-- Inline results (shown after events complete) -->
-      <div id="pbp-results" class="pbp-results" style="display:none">
-        <div id="pbp-results-content"></div>
-        <button id="btn-continue" class="btn-primary btn-large">Continue →</button>
-      </div>
+            <!-- ── Static map background ── -->
+            <rect x="0" y="0" width="300" height="300" fill="#0c1a0c"/>
+
+            <!-- Lane paths (L-shapes for top/bot, diagonal for mid) -->
+            <polyline points="22,278 22,22 278,22"
+                      stroke="#152815" stroke-width="26" fill="none"
+                      stroke-linejoin="round" stroke-linecap="round"/>
+            <polyline points="22,278 278,278 278,22"
+                      stroke="#152815" stroke-width="26" fill="none"
+                      stroke-linejoin="round" stroke-linecap="round"/>
+            <line x1="22" y1="285" x2="285" y2="22"
+                  stroke="#152815" stroke-width="20" stroke-linecap="round"/>
+
+            <!-- River diagonal band -->
+            <polygon points="0,140 140,0 160,0 300,140 300,160 160,300 140,300 0,160"
+                     fill="#0d2535" opacity="0.55"/>
+
+            <!-- Blue base (bottom-left) -->
+            <rect x="2" y="258" width="42" height="42" rx="5" fill="#061630" opacity="0.95"/>
+            <text x="23" y="277" text-anchor="middle" fill="#4fc3f7" font-size="8" font-weight="bold">BLU</text>
+            <text x="23" y="290" text-anchor="middle" fill="#4fc3f7" font-size="7" opacity="0.7">BASE</text>
+
+            <!-- Red base (top-right) -->
+            <rect x="256" y="2" width="42" height="42" rx="5" fill="#300606" opacity="0.95"/>
+            <text x="277" y="21" text-anchor="middle" fill="#ff7b7b" font-size="8" font-weight="bold">RED</text>
+            <text x="277" y="34" text-anchor="middle" fill="#ff7b7b" font-size="7" opacity="0.7">BASE</text>
+
+            <!-- Baron pit (top-left of river) -->
+            <circle cx="78" cy="78" r="17" fill="#130c22" stroke="#9b59b6" stroke-width="1.5" opacity="0.9"/>
+            <text x="78" y="83" text-anchor="middle" fill="#9b59b6" font-size="13">🟣</text>
+
+            <!-- Dragon pit (bottom-right of river) -->
+            <circle cx="222" cy="222" r="17" fill="#1a2508" stroke="#c89b3c" stroke-width="1.5" opacity="0.9"/>
+            <text x="222" y="227" text-anchor="middle" fill="#c89b3c" font-size="13">🐉</text>
+
+            <!-- Tower markers (very subtle dots) -->
+            <circle cx="22"  cy="88"  r="4" fill="#4fc3f7" opacity="0.22"/>
+            <circle cx="112" cy="188" r="4" fill="#4fc3f7" opacity="0.22"/>
+            <circle cx="88"  cy="272" r="4" fill="#4fc3f7" opacity="0.22"/>
+            <circle cx="278" cy="212" r="4" fill="#ff7b7b" opacity="0.22"/>
+            <circle cx="188" cy="112" r="4" fill="#ff7b7b" opacity="0.22"/>
+            <circle cx="212" cy="22"  r="4" fill="#ff7b7b" opacity="0.22"/>
+
+            <!-- ── Dynamic player dots (positions set by map.js) ── -->
+            <g id="map-blue-dots">
+              <circle id="map-b-top"     class="map-dot map-dot-blue" r="9" cx="28"  cy="75"/>
+              <circle id="map-b-jungle"  class="map-dot map-dot-blue" r="9" cx="82"  cy="170"/>
+              <circle id="map-b-mid"     class="map-dot map-dot-blue" r="9" cx="92"  cy="208"/>
+              <circle id="map-b-adc"     class="map-dot map-dot-blue" r="9" cx="72"  cy="268"/>
+              <circle id="map-b-support" class="map-dot map-dot-blue" r="9" cx="90"  cy="274"/>
+            </g>
+            <g id="map-red-dots">
+              <circle id="map-r-top"     class="map-dot map-dot-red" r="9" cx="272" cy="28"/>
+              <circle id="map-r-jungle"  class="map-dot map-dot-red" r="9" cx="218" cy="132"/>
+              <circle id="map-r-mid"     class="map-dot map-dot-red" r="9" cx="208" cy="92"/>
+              <circle id="map-r-adc"     class="map-dot map-dot-red" r="9" cx="228" cy="268"/>
+              <circle id="map-r-support" class="map-dot map-dot-red" r="9" cx="210" cy="274"/>
+            </g>
+
+            <!-- Labels on top of dots -->
+            <g id="map-blue-labels" style="pointer-events:none">
+              <text id="map-b-top-lbl"     class="map-dot-lbl" x="28"  y="79">T</text>
+              <text id="map-b-jungle-lbl"  class="map-dot-lbl" x="82"  y="174">J</text>
+              <text id="map-b-mid-lbl"     class="map-dot-lbl" x="92"  y="212">M</text>
+              <text id="map-b-adc-lbl"     class="map-dot-lbl" x="72"  y="272">A</text>
+              <text id="map-b-support-lbl" class="map-dot-lbl" x="90"  y="278">S</text>
+            </g>
+            <g id="map-red-labels" style="pointer-events:none">
+              <text id="map-r-top-lbl"     class="map-dot-lbl" x="272" y="32">T</text>
+              <text id="map-r-jungle-lbl"  class="map-dot-lbl" x="218" y="136">J</text>
+              <text id="map-r-mid-lbl"     class="map-dot-lbl" x="208" y="96">M</text>
+              <text id="map-r-adc-lbl"     class="map-dot-lbl" x="228" y="272">A</text>
+              <text id="map-r-support-lbl" class="map-dot-lbl" x="210" y="278">S</text>
+            </g>
+
+            <!-- Event flash ring (animated by map.js) -->
+            <circle id="map-event-ring" cx="150" cy="150" r="0"
+                    fill="none" stroke="#c89b3c" stroke-width="2" opacity="0"/>
+          </svg>
+
+          <div class="pbp-map-legend">
+            <span class="map-leg-blue">● Blue</span>
+            <span class="map-leg-red">● Red</span>
+            <span class="map-leg-dim">⬤ = dead</span>
+          </div>
+        </div>
+
+        <!-- Events column -->
+        <div class="pbp-event-col">
+          <div class="pbp-controls">
+            <button id="btn-skip-pbp" class="btn-secondary" style="display:none">⏩ Skip to End</button>
+          </div>
+
+          <!-- Events scroll area -->
+          <div id="pbp-events" class="pbp-events"></div>
+
+          <!-- Inline results (shown after events complete) -->
+          <div id="pbp-results" class="pbp-results" style="display:none">
+            <div id="pbp-results-content"></div>
+            <button id="btn-continue" class="btn-primary btn-large">Continue →</button>
+          </div>
+        </div>
+
+      </div><!-- /.pbp-body-wrap -->
 
     </div>
 
@@ -214,6 +313,7 @@
 <script src="js/game/shop.js"></script>
 <script src="js/game/simulation.js"></script>
 <script src="js/game/tournament.js"></script>
+<script src="js/ui/map.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
 </body>

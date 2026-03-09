@@ -336,6 +336,7 @@ function startPlayByPlay(matchResult, blueTeamName, redTeamName) {
 
   eventsEl.innerHTML = '';
   if (resultsEl) resultsEl.style.display = 'none';
+  if (typeof initMapVisualization === 'function') initMapVisualization();
 
   // Initialize score bar to 0
   setText('score-blue-kills', '0K');
@@ -457,6 +458,7 @@ function startPlayByPlay(matchResult, blueTeamName, redTeamName) {
       el.className = `pbp-line pbp-${ev.type || 'commentary'}${sideClass}`;
       el.innerHTML = `<span class="pbp-time">${ev.time || ''}</span><span class="pbp-text">${ev.text || ''}</span>`;
       updateLiveScoreBar(ev);
+      if (typeof updateMap === 'function') updateMap(ev);
     }
     eventsEl.appendChild(el);
     // Trigger animation
@@ -477,10 +479,12 @@ function startPlayByPlay(matchResult, blueTeamName, redTeamName) {
   function skipAll() {
     if (skipped) return;
     skipped = true;
+    if (typeof setMapSkipMode === 'function') setMapSkipMode(true);
     _pbpTimeouts.forEach(t => clearTimeout(t));
     _pbpTimeouts = [];
     // Reveal all remaining at once
     while (idx < queue.length) addEventLine(queue[idx++]);
+    if (typeof setMapSkipMode === 'function') setMapSkipMode(false);
     onPlayByPlayComplete();
   }
 
