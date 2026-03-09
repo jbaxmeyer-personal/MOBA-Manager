@@ -426,10 +426,17 @@ function simulateMatch(blueTeam, redTeam, blueTeamName, redTeamName) {
 
   const stats = deriveMatchStats(blueWins, advantage);
 
-  // Override baron counts to exactly match what appeared in PBP events
+  // Override discrete objective counts to exactly match what appeared in PBP.
+  // Dragons and barons are fully tracked per-event; kills/towers are narrative
+  // highlights so their stats totals are left as deriveMatchStats estimates.
   const allEvents = [...laningEvents, ...midEvents, ...lateEvents];
+
+  const dragonEvts = allEvents.filter(e => e.dragonBlue !== undefined);
+  stats.blue.dragons = dragonEvts.filter(e =>  e.dragonBlue).length;
+  stats.red.dragons  = dragonEvts.filter(e => !e.dragonBlue).length;
+
   const baronEvts = allEvents.filter(e => e.baronBlue !== undefined);
-  stats.blue.barons = baronEvts.filter(e => e.baronBlue).length;
+  stats.blue.barons = baronEvts.filter(e =>  e.baronBlue).length;
   stats.red.barons  = baronEvts.filter(e => !e.baronBlue).length;
 
   // Sort events within each phase by timestamp so they display in order
