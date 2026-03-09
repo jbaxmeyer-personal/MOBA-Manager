@@ -52,26 +52,6 @@ TFT-style planning board as a new tab where the player can slot in hypothetical 
 
 ---
 
-### Task #4 — Per-Player KDA Breakdown in Match Results
-Show each player's individual K/D/A after the match, distributed by role archetype (ADC/Mid/JG = more kills, Support/Top = fewer).
-
-- Table in `pbp-results`: Player | Champion | K | D | A for both sides
-- Distribution weighted by role — stays realistic without exact simulation
-
-**Key files:** `js/game/simulation.js` (deriveMatchStats — add playerStats), `js/ui.js` (renderInlineResults), `css/style.css`
-
----
-
-### Task #5 — Gold Lead Tracker Bar
-Visual tug-of-war gold bar in the match screen updating live as PBP events fire.
-
-- No Y-axis numbers, just a blue←→red sliding bar
-- Accumulates gold estimates per event (kill=300g, tower=150g, dragon=150g, baron=300g)
-- Final totals shown after play-by-play ends (e.g. "Blue: 52.4k | Red: 47.1k")
-
-**Key files:** `index.html` (add element to score-bar), `js/ui.js` (updateLiveScoreBar, startPlayByPlay), `css/style.css`
-
----
 
 ### Task #6 — Champion-Specific Ult Callouts in PBP
 Make PBP commentary reference champion ultimates by name ~40% of the time for kill/teamfight events, 100% for clutch comebacks.
@@ -92,3 +72,4 @@ Make PBP commentary reference champion ultimates by name ~40% of the time for ki
 - Balance pass (10 rounds × 20 iterations via playtest.js approximation)
 - Owned shop player highlight (soft yellow border)
 - **Major update (2026-03-08):** 30+ fixes including dragon soul→4 dragons, baron attribution, star upgrade placement, per-player trait/region bonuses, multiple region synergies, auto-replace T0 rookies, AI T1 starts, level cap 5→9, TFT tier odds, PBP event sorting, blue/red PBP coloring, Diamond color change, null region hidden, roster modal from standings, star badges in draft, page refresh warning
+- **2026-03-09:** Real match sim — replaced deriveMatchStats with tally system; all stats (kills/towers/dragons/barons/gold) now derived from actual simulation events. Per-player KDA breakdown in results (Task #4 ✅). Gold lead tug-of-war bar with final totals (Task #5 ✅). Bracket screen Continue button. Mobile pull-to-refresh fix. PBP color coding flipped (team=left, event type=right).
