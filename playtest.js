@@ -264,9 +264,9 @@ function buildRoster(strategy,round,humanVariance){
     const pool=eligible.length?eligible:cands;
     let idx=0;
     if(humanVariance){
-      // Human: 68% best, 20% 2nd, 12% 3rd (imperfect shop luck + decisions)
+      // Human: 63% best, 22% 2nd, 15% 3rd (imperfect shop luck + decisions)
       const r=Math.random();
-      idx=r<0.68?0:r<0.88?Math.min(1,pool.length-1):Math.min(2,pool.length-1);
+      idx=r<0.63?0:r<0.85?Math.min(1,pool.length-1):Math.min(2,pool.length-1);
     } else {
       const bias=STRATEGY_BIAS[strategy]||0.65;
       idx=chance(bias*100)?0:Math.min(pool.length-1,randInt(0,Math.ceil(pool.length/2)));
@@ -274,7 +274,7 @@ function buildRoster(strategy,round,humanVariance){
     const t=pool[idx]||cands[0];
     // Human: engaged player gets slightly better star rates
     const stars=humanVariance?
-      (round>=10&&Math.random()<0.12?3:round>=6&&Math.random()<0.24?2:1):
+      (round>=10&&Math.random()<0.09?3:round>=6&&Math.random()<0.20?2:1):
       assignStars(strategy,round,t.tier);
     return{...t,stats:{...t.stats},traits:[...t.traits],stars,
            instanceId:Math.random().toString(36).substr(2,6)};
