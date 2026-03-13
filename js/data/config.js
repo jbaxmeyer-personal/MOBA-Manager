@@ -52,102 +52,17 @@ const CONFIG = {
   POSITIONS: ['top', 'jungle', 'mid', 'adc', 'support'],
   DRAGON_TYPES: ['Infernal', 'Mountain', 'Ocean', 'Cloud', 'Hextech', 'Chemtech'],
 
-  // ─── TRAIT SYSTEM ────────────────────────────────────────────
-  // Each trait activates at count thresholds, granting stat bonuses (additive, not %)
-  TRAITS: {
-    Carry: {
-      icon: '⚔️',
-      color: '#e74c3c',
-      thresholds: [2, 4],
-      bonuses: [
-        { mechanics: 8,  laning: 5 },
-        { mechanics: 16, laning: 10, teamfighting: 6 },
-      ],
-      desc: ['(2) +8 Mech, +5 Lan', '(4) +16 Mech, +10 Lan, +6 TF'],
-    },
-    Shotcaller: {
-      icon: '📣',
-      color: '#f39c12',
-      thresholds: [1, 2],
-      bonuses: [
-        { gameSense: 8,  communication: 5 },
-        { gameSense: 18, communication: 15, teamfighting: 6 },
-      ],
-      desc: ['(1) +8 GS, +5 COM', '(2) +18 GS, +15 COM, +6 TF'],
-    },
-    Mechanical: {
-      icon: '⚡',
-      color: '#3498db',
-      thresholds: [2, 3],
-      bonuses: [
-        { mechanics: 12, clutch: 6 },
-        { mechanics: 20, clutch: 12, laning: 8 },
-      ],
-      desc: ['(2) +12 Mech, +6 CLU', '(3) +20 Mech, +12 CLU, +8 Lan'],
-    },
-    Veteran: {
-      icon: '🎖️',
-      color: '#95a5a6',
-      thresholds: [2, 3],
-      bonuses: [
-        { consistency: 12, gameSense: 5 },
-        { consistency: 22, gameSense: 12, communication: 8 },
-      ],
-      desc: ['(2) +12 CON, +5 GS', '(3) +22 CON, +12 GS'],
-    },
-    Fragger: {
-      icon: '💀',
-      color: '#9b59b6',
-      thresholds: [2, 4],
-      bonuses: [
-        { clutch: 8,  mechanics: 5 },
-        { clutch: 16, mechanics: 10, laning: 8 },
-      ],
-      desc: ['(2) +8 CLU, +5 Mech', '(4) +16 CLU, +10 Mech, +8 Lan'],
-    },
-    Utility: {
-      icon: '🛡️',
-      color: '#2ecc71',
-      thresholds: [2, 3],
-      bonuses: [
-        { communication: 10, teamfighting: 6 },
-        { communication: 20, teamfighting: 14, gameSense: 8 },
-      ],
-      desc: ['(2) +10 COM, +6 TF', '(3) +20 COM, +14 TF'],
-    },
-    Macro: {
-      icon: '🗺️',
-      color: '#1abc9c',
-      thresholds: [2, 3],
-      bonuses: [
-        { gameSense: 12, consistency: 6 },
-        { gameSense: 22, consistency: 12, teamfighting: 8 },
-      ],
-      desc: ['(2) +12 GS, +6 CON', '(3) +22 GS, +12 CON'],
-    },
-    Playmaker: {
-      icon: '🎯',
-      color: '#e67e22',
-      thresholds: [2, 3],
-      bonuses: [
-        { clutch: 10, mechanics: 6 },
-        { clutch: 20, mechanics: 14, teamfighting: 8 },
-      ],
-      desc: ['(2) +10 CLU, +6 Mech', '(3) +20 CLU, +14 Mech'],
-    },
-  },
-
   // ─── REGION SYNERGIES ─────────────────────────────────────────
   // Active when 2+ players from same region on active roster
   REGION_SYNERGY: {
-    2: { bonusPct: 6,  desc: '+6% all stats' },
-    3: { bonusPct: 12, desc: '+12% all stats' },
-    4: { bonusPct: 18, desc: '+18% all stats' },
-    5: { bonusPct: 20, desc: '+20% all stats' },
+    2: { bonusPct: 4,  desc: '+4% all stats' },
+    3: { bonusPct: 8,  desc: '+8% all stats' },
+    4: { bonusPct: 12, desc: '+12% all stats' },
+    5: { bonusPct: 15, desc: '+15% all stats' },
   },
   REGION_COLORS: {
-    Korea: '#4fc3f7', China: '#ff7043', EU: '#ab47bc',
-    NA: '#26a69a', SEA: '#d4e157', LATAM: '#ffa726',
+    LCK: '#4fc3f7', LPL: '#ff7043', LEC: '#ab47bc',
+    LCS: '#26a69a', LLA: '#ffa726', VCS: '#d4e157', PCS: '#66bb6a',
   },
 
   // ─── AI STRATEGIES ────────────────────────────────────────────

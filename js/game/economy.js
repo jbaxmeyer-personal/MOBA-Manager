@@ -96,7 +96,7 @@ function sellPlayer(state, instanceId, returnToPool = true) {
   state.gold += baseSell * starMult;
   if (returnToPool && state.playerPool && player.tier > 0) {
     const template = getPlayerTemplate(player.id);
-    if (template) state.playerPool.push({ ...template, stats: { ...template.stats }, champions: [...template.champions], traits: [...(template.traits||[])] });
+    if (template) state.playerPool.push({ ...template, stats: { ...template.stats }, champions: [...template.champions] });
   }
   return true;
 }
@@ -175,51 +175,8 @@ function checkStarUpgrades(state) {
   if (upgraded) checkStarUpgrades(state);
 }
 
-// ─── Trait / Region Synergy Calculation ──────────────────────────────────────
-
-function calcTraitSynergies(roster) {
-  const counts = {};
-  roster.filter(Boolean).forEach(p => {
-    (p.traits || []).forEach(t => {
-      counts[t] = (counts[t] || 0) + 1;
-    });
-  });
-
-  const bonuses  = {};
-  const active   = []; // { trait, count, tier, bonus, nextAt }
-
-  for (const [trait, count] of Object.entries(counts)) {
-    const def = CONFIG.TRAITS[trait];
-    if (!def) continue;
-
-    let activeTier = -1;
-    for (let i = def.thresholds.length - 1; i >= 0; i--) {
-      if (count >= def.thresholds[i]) { activeTier = i; break; }
-    }
-
-    const nextAt = def.thresholds.find(t => t > count) || null;
-
-    active.push({
-      trait, count, activeTier, nextAt,
-      bonus: activeTier >= 0 ? def.bonuses[activeTier] : null,
-      def,
-    });
-
-    if (activeTier >= 0) {
-      for (const [stat, val] of Object.entries(def.bonuses[activeTier])) {
-        bonuses[stat] = (bonuses[stat] || 0) + val;
-      }
-    }
-  }
-
-  // Sort: active first, then by count desc
-  active.sort((a, b) => {
-    if (a.activeTier !== b.activeTier) return b.activeTier - a.activeTier;
-    return b.count - a.count;
-  });
-
-  return { bonuses, active, counts };
-}
+// ─── Region Synergy Calculation ──────────────────────────────────────────────
+// (Trait system removed — players now use FM-style attributes, no traits)
 
 function calcRegionSynergy(roster) {
   const counts = {};
@@ -254,35 +211,16 @@ function calcRegionSynergy(roster) {
   };
 }
 
-// Apply per-player synergy bonuses:
-//   - Trait bonus: only applies to players who have that trait (and it's active)
-//   - Region bonus: only applies to players from an active region
-function applyBonuses(baseStats, traitSynergies, regionSynergy, player) {
-  if (!player) {
-    const s = {};
-    for (const [k, v] of Object.entries(baseStats)) s[k] = Math.round(v);
-    return s;
-  }
-
-  // Only traits THIS player has, if that trait is active
-  const playerTraitBonus = {};
-  (player.traits || []).forEach(trait => {
-    const syn = (traitSynergies.active || []).find(s => s.trait === trait && s.activeTier >= 0);
-    if (syn && syn.bonus) {
-      for (const [k, v] of Object.entries(syn.bonus)) {
-        playerTraitBonus[k] = (playerTraitBonus[k] || 0) + v;
-      }
-    }
-  });
-
-  // Only apply region bonus if this player is from an active region
-  const regionData = player.region && regionSynergy.activeRegions
+// Apply per-player synergy bonuses (region synergy only — traits removed):
+//   - Region bonus: small % boost for players from the same region on the team
+function applyBonuses(baseStats, _traitSynergies, regionSynergy, player) {
+  const regionData = player && player.region && regionSynergy && regionSynergy.activeRegions
     ? regionSynergy.activeRegions[player.region] : null;
   const regionMult = 1 + (regionData ? regionData.bonusPct : 0) / 100;
 
   const s = {};
   for (const [k, v] of Object.entries(baseStats)) {
-    s[k] = Math.round((v + (playerTraitBonus[k] || 0)) * regionMult);
+    s[k] = Math.min(20, Math.round(v * regionMult));
   }
   return s;
 }

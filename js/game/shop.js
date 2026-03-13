@@ -14,7 +14,7 @@ function drawShop(state) {
 
   // Return un-bought shop players to pool
   state.shopSlots.forEach(slot => {
-    if (slot) state.playerPool.push({ ...slot, stats: { ...slot.stats }, champions: [...slot.champions], traits: [...(slot.traits||[])] });
+    if (slot) state.playerPool.push({ ...slot, stats: { ...slot.stats }, champions: [...slot.champions] });
   });
   state.shopSlots = [];
 
@@ -26,6 +26,13 @@ function drawShop(state) {
 function drawFromPool(state) {
   if (!state.playerPool.length) return null;
 
+  // Build set of player IDs the human already owns at 3★ (no point showing more copies)
+  const maxedIds = new Set();
+  if (state.roster || state.bench) {
+    const allOwned = [...(state.roster || []), ...(state.bench || [])];
+    allOwned.forEach(p => { if (p && p.stars === 3) maxedIds.add(p.id); });
+  }
+
   const odds       = CONFIG.TIER_ODDS[state.level] || CONFIG.TIER_ODDS[1];
   const roll       = Math.random() * 100;
   let   cumulative = 0;
@@ -36,21 +43,26 @@ function drawFromPool(state) {
     if (roll < cumulative) { targetTier = t; break; }
   }
 
-  // Find a player of target tier; fallback to nearest available tier
-  let idx = state.playerPool.findIndex(p => p.tier === targetTier);
+  // Find a player of target tier; fallback to nearest available tier; skip 3★-maxed
+  const eligible = (p) => !maxedIds.has(p.id);
+
+  let idx = state.playerPool.findIndex(p => p.tier === targetTier && eligible(p));
 
   if (idx === -1) {
     // Try adjacent tiers: lower first, then higher
     for (let delta = 1; delta <= 4; delta++) {
       const lo = targetTier - delta;
       const hi = targetTier + delta;
-      if (lo >= 1) idx = state.playerPool.findIndex(p => p.tier === lo);
-      if (idx === -1 && hi <= 5) idx = state.playerPool.findIndex(p => p.tier === hi);
+      if (lo >= 1) idx = state.playerPool.findIndex(p => p.tier === lo && eligible(p));
+      if (idx === -1 && hi <= 5) idx = state.playerPool.findIndex(p => p.tier === hi && eligible(p));
       if (idx !== -1) break;
     }
   }
 
-  if (idx === -1) idx = 0; // last resort
+  // Last resort: any player (even maxed, to avoid returning null when pool has cards)
+  if (idx === -1) idx = state.playerPool.findIndex(eligible);
+  if (idx === -1) idx = 0;
+
   const [player] = state.playerPool.splice(idx, 1);
   return player;
 }
@@ -93,9 +105,9 @@ function initAITeam(cfg) {
   const privatePool = buildPlayerPool();
   shuffleArray(privatePool);
 
-  // Pick target trait for synergy strategy
-  const traitKeys   = Object.keys(CONFIG.TRAITS);
-  const targetTrait = traitKeys[Math.floor(Math.random() * traitKeys.length)];
+  // Pick target region for synergy strategy (region synergy replaces trait synergy)
+  const regionKeys  = Object.keys(CONFIG.REGION_COLORS || {});
+  const targetTrait = regionKeys[Math.floor(Math.random() * regionKeys.length)] || 'LCK';
 
   const starterRoster = [null, null, null, null, null];
   // Give AI the starter pack (one T0 per position)
@@ -240,7 +252,8 @@ function simulateAIShopRound(aiTeam, round) {
 function shouldAIReroll(aiTeam, shopSlots, strategy) {
   if (strategy === 'reroller') return true;
   if (strategy === 'synergy') {
-    return !shopSlots.some(p => p && (p.traits||[]).includes(aiTeam.targetTrait));
+    // Reroll if no shop player matches the target region
+    return !shopSlots.some(p => p && p.region === aiTeam.targetTrait);
   }
   return false;
 }
@@ -249,8 +262,8 @@ function aiShouldBuy(aiTeam, player, strategy) {
   if (!player) return false;
   const tier = player.tier;
 
-  if (strategy === 'aggressor') return tier >= aiTeam.level; // buy if tier >= level
-  if (strategy === 'synergy')   return (player.traits||[]).includes(aiTeam.targetTrait);
+  if (strategy === 'aggressor') return tier >= aiTeam.level;
+  if (strategy === 'synergy')   return player.region === aiTeam.targetTrait;
   if (strategy === 'reroller')  return tier <= 3; // only buy cheap players to 3-star
   if (strategy === 'leveler')   return tier >= Math.max(2, aiTeam.level - 1);
   if (strategy === 'economy')   return tier <= 3 || aiTeam.gold > 30;

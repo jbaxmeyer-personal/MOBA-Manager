@@ -22,8 +22,24 @@ function tierLabel(tier)  { return ['','Iron','Silver','Gold','Platinum','Diamon
 function posIcon(pos)     { return { top:'⚔️', jungle:'🌿', mid:'🔮', adc:'🏹', support:'🛡️' }[pos]||'👤'; }
 function starBadge(stars) { return stars === 3 ? '<span class="star-badge s3">★★★</span>' : stars === 2 ? '<span class="star-badge s2">★★</span>' : ''; }
 
+// FM attribute abbreviations
 function statAbbr(key) {
-  return { mechanics:'MEC', laning:'LAN', gameSense:'GS', teamfighting:'TF', communication:'COM', clutch:'CLU', consistency:'CON', draftIQ:'DIQ' }[key] || key.slice(0,3).toUpperCase();
+  return {
+    mechanics:'MEC', csAccuracy:'CSA', teamfightPositioning:'TFP', mapMovement:'MAP',
+    objectiveExecution:'OBJ', championPoolDepth:'CPD',
+    decisionMaking:'DEC', gameSense:'GS', communication:'COM', leadership:'LDR',
+    adaptability:'ADP', composure:'CMP',
+  }[key] || key.slice(0,3).toUpperCase();
+}
+
+// FM attribute full names (for tooltips)
+function statLabel(key) {
+  return {
+    mechanics:'Mechanics', csAccuracy:'CS Accuracy', teamfightPositioning:'TF Positioning',
+    mapMovement:'Map Movement', objectiveExecution:'Objective Exec', championPoolDepth:'Champ Pool',
+    decisionMaking:'Decision Making', gameSense:'Game Sense', communication:'Communication',
+    leadership:'Leadership', adaptability:'Adaptability', composure:'Composure',
+  }[key] || key;
 }
 
 function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
@@ -66,12 +82,11 @@ function playerCardHTML(player, ctx, extra = {}) {
   const top3     = Object.entries(eStats).sort((a,b)=>b[1]-a[1]).slice(0,3);
   const isSelected = extra.selectedId && extra.selectedId === player.instanceId;
 
-  const traitBadges = (player.traits || []).map(t => {
-    const def = CONFIG.TRAITS[t];
-    return def ? `<span class="trait-chip" style="border-color:${def.color};color:${def.color}">${def.icon} ${t}</span>` : '';
-  }).join('');
-
   const champList = (player.champions || []).join(' · ');
+  const regionColor = (CONFIG.REGION_COLORS || {})[player.region] || '#aaa';
+  const regionDisplay = player.region && player.region !== 'null' ? player.region : '';
+  const ageDisplay = player.age ? `Age ${player.age}` : '';
+  const secondaryDisplay = player.secondaryRole ? ` · ${posIcon(player.secondaryRole)} 2nd` : '';
 
   let actionRow = '';
   if (ctx === 'shop') {
@@ -93,7 +108,11 @@ function playerCardHTML(player, ctx, extra = {}) {
       </div>`;
   }
 
-  const regionDisplay = player.region && player.region !== 'null' ? player.region : '';
+  // FM-style attribute bars (top 4 stats, color-coded by value)
+  const attrBarColor = v => v >= 17 ? '#e67e22' : v >= 14 ? '#2ecc71' : v >= 10 ? '#3498db' : '#95a5a6';
+  const statBars = top3.map(([k,v]) =>
+    `<span class="stat-pip" title="${statLabel(k)}: ${v}/20" style="--bar-c:${attrBarColor(v)}">${statAbbr(k)}<b>${v}</b></span>`
+  ).join('');
 
   return `
     <div class="player-card tier-${player.tier}${isSelected?' selected':''}${extra.owned?' owned':''}" style="border-color:${color}">
@@ -102,12 +121,12 @@ function playerCardHTML(player, ctx, extra = {}) {
         <span class="card-name">${player.name}</span>
         <span class="card-tier" style="color:${color}">${tierLabel(player.tier)}${starBadge(player.stars)}</span>
       </div>
-      <div class="card-region">${regionDisplay}</div>
-      <div class="card-traits">${traitBadges}</div>
-      <div class="card-champs" title="Champion Pool">🎮 ${champList}</div>
-      <div class="card-stats">
-        ${top3.map(([k,v]) => `<span class="stat-pip">${statAbbr(k)}<b>${v}</b></span>`).join('')}
+      <div class="card-region">
+        <span style="color:${regionColor}">${regionDisplay}</span>
+        <span class="card-age">${ageDisplay}${secondaryDisplay}</span>
       </div>
+      <div class="card-champs" title="Champion Pool">🎮 ${champList}</div>
+      <div class="card-stats">${statBars}</div>
       ${actionRow ? `<div class="card-actions">${actionRow}</div>` : ''}
     </div>`;
 }
@@ -163,45 +182,53 @@ function renderSynergies(state) {
   if (!el) return;
 
   const roster = state.roster.filter(Boolean);
-  if (!roster.length) { el.innerHTML = '<p class="syn-empty">Add players to see synergies</p>'; return; }
+  if (!roster.length) { el.innerHTML = '<p class="syn-empty">Add players to activate bonuses</p>'; return; }
 
-  const traitResult  = calcTraitSynergies(roster);
   const regionResult = calcRegionSynergy(roster);
 
-  // Trait rows
-  const traitRows = traitResult.active.map(s => {
-    const def       = CONFIG.TRAITS[s.trait];
-    const isActive  = s.activeTier >= 0;
-    const nextNote  = s.nextAt ? ` (${s.nextAt - s.count} more for tier ${s.activeTier+2})` : '';
-    const bonusText = isActive ? def.desc[s.activeTier] : def.thresholds[0] - s.count > 0
-      ? `need ${def.thresholds[0] - s.count} more` : '';
-    return `
-      <div class="syn-row${isActive?' syn-active':''}">
-        <span class="syn-icon" style="color:${def.color}">${def.icon}</span>
-        <span class="syn-name">${s.trait}</span>
-        <span class="syn-count${isActive?' count-active':''}">${s.count}</span>
-        <span class="syn-bonus">${bonusText}${nextNote}</span>
-      </div>`;
+  // Team average for each FM attribute (used as team overview bars)
+  const FM_ATTRS = ['mechanics','csAccuracy','teamfightPositioning','mapMovement','objectiveExecution','championPoolDepth',
+                    'decisionMaking','gameSense','communication','leadership','adaptability','composure'];
+  const avgAttr = key => {
+    const vals = roster.map(p => (getEffectiveStats(p)[key] || 0));
+    return vals.length ? (vals.reduce((a,b)=>a+b,0) / vals.length).toFixed(1) : '—';
+  };
+  const barWidth = v => Math.round((parseFloat(v) / 20) * 100);
+  const barColor = v => parseFloat(v) >= 15 ? '#e67e22' : parseFloat(v) >= 12 ? '#2ecc71' : parseFloat(v) >= 8 ? '#3498db' : '#95a5a6';
+
+  const techAttrs = FM_ATTRS.slice(0,6);
+  const mentAttrs = FM_ATTRS.slice(6);
+
+  const attrRows = (attrs) => attrs.map(k => {
+    const v = avgAttr(k);
+    return `<div class="attr-row">
+      <span class="attr-name">${statLabel(k)}</span>
+      <div class="attr-bar-bg"><div class="attr-bar-fill" style="width:${barWidth(v)}%;background:${barColor(v)}"></div></div>
+      <span class="attr-val">${v}</span>
+    </div>`;
   }).join('');
 
-  // Region rows — show ALL active region bonuses (can have multiple if 2+ from different regions)
+  // Region synergy rows
   let regionRows = '';
   for (const [region, data] of Object.entries(regionResult.activeRegions || {})) {
     if (!region || region === 'null') continue;
-    const color = CONFIG.REGION_COLORS[region] || '#aaa';
+    const color = (CONFIG.REGION_COLORS || {})[region] || '#aaa';
     regionRows += `
       <div class="syn-row syn-active syn-region">
         <span class="syn-icon" style="color:${color}">🌍</span>
         <span class="syn-name">${region}</span>
         <span class="syn-count count-active">${data.count}</span>
-        <span class="syn-bonus">${data.desc} (${region} players only)</span>
+        <span class="syn-bonus">${data.desc}</span>
       </div>`;
   }
 
   el.innerHTML = `
-    <div class="syn-title">Team Synergies</div>
-    ${traitRows || '<p class="syn-empty">No trait synergies yet</p>'}
-    ${regionRows}`;
+    <div class="syn-title">Team Overview</div>
+    <div class="attr-section-label">Technical</div>
+    ${attrRows(techAttrs)}
+    <div class="attr-section-label" style="margin-top:8px">Mental</div>
+    ${attrRows(mentAttrs)}
+    ${regionRows ? `<div class="syn-title" style="margin-top:10px">Region Synergies</div>${regionRows}` : ''}`;
 }
 
 // ─── Standings ────────────────────────────────────────────────────────────────
@@ -324,21 +351,59 @@ function ratingBar(label, bVal, rVal) {
 
 let _pbpTimeouts = [];
 
+// Speed presets: delay in ms between events (Infinity = paused)
+const PBP_SPEEDS = { 0: Infinity, 1: 3000, 2: 1400, 4: 450, 99: 0 };
+let _pbpCurrentDelay = 3000;
+let _pbpPaused = false;
+let _pbpRevealFn = null; // reference to active revealNext, for unpause
+
 function startPlayByPlay(matchResult, blueTeamName, redTeamName) {
-  // Clear any existing timeouts
   _pbpTimeouts.forEach(t => clearTimeout(t));
   _pbpTimeouts = [];
+  _pbpCurrentDelay = 3000;
+  _pbpPaused = false;
+  _pbpRevealFn = null;
 
   const eventsEl = document.getElementById('pbp-events');
   const resultsEl = document.getElementById('pbp-results');
-  const skipBtn = document.getElementById('btn-skip-pbp');
   if (!eventsEl) return;
 
   eventsEl.innerHTML = '';
   if (resultsEl) resultsEl.style.display = 'none';
   if (typeof initMapVisualization === 'function') initMapVisualization();
 
-  // Initialize score bar to 0
+  // Build speed-control bar in place of old skip button
+  const ctrlEl = document.querySelector('.pbp-controls');
+  if (ctrlEl) {
+    ctrlEl.innerHTML = `
+      <div class="speed-controls">
+        <span class="speed-label">Speed:</span>
+        <button class="speed-btn" data-speed="0">■ Pause</button>
+        <button class="speed-btn speed-active" data-speed="1">▶ 1×</button>
+        <button class="speed-btn" data-speed="2">▶▶ 2×</button>
+        <button class="speed-btn" data-speed="4">▶▶▶ 4×</button>
+        <button class="speed-btn" data-speed="99">⏭ Skip</button>
+      </div>`;
+    ctrlEl.querySelectorAll('.speed-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const speed = parseFloat(btn.dataset.speed);
+        if (speed === 99) { skipAll(); return; }
+        ctrlEl.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('speed-active'));
+        btn.classList.add('speed-active');
+        _pbpCurrentDelay = PBP_SPEEDS[speed] ?? 3000;
+        if (speed === 0) {
+          _pbpPaused = true;
+          _pbpTimeouts.forEach(t => clearTimeout(t));
+          _pbpTimeouts = [];
+        } else if (_pbpPaused) {
+          _pbpPaused = false;
+          if (_pbpRevealFn) _pbpRevealFn();
+        }
+      });
+    });
+  }
+
+  // Score bar
   setText('score-blue-kills', '0K');
   setText('score-blue-dragons', '🐉0');
   setText('score-blue-towers', '🏰0');
@@ -346,24 +411,23 @@ function startPlayByPlay(matchResult, blueTeamName, redTeamName) {
   setText('score-red-dragons', '🐉0');
   setText('score-red-towers', '🏰0');
 
-  // Reset gold chart
+  // Gold chart
   const goldSvg = document.getElementById('gold-chart-svg');
   if (goldSvg) goldSvg.innerHTML = '';
   const goldTotals = document.getElementById('gold-totals');
   if (goldTotals) goldTotals.style.display = 'none';
-  const _goldPoints = [0]; // goldDiff values per event, starts at 0
+  const _goldPoints = [0];
 
   function redrawGoldChart() {
     if (!goldSvg) return;
     const W = goldSvg.clientWidth || 420;
     const H = 64;
     const cy = H / 2;
-    const MAX = 3500;
+    const MAX = 4000;
     const pts = _goldPoints;
     if (pts.length < 2) { goldSvg.innerHTML = ''; return; }
     const xs = (i) => (i / (pts.length - 1)) * W;
     const ys = (v) => cy - clamp(v / MAX, -1, 1) * (cy - 4);
-    // Build polyline points string
     let lineStr = '', blueStr = `0,${cy} `, redStr = `0,${cy} `;
     pts.forEach((v, i) => {
       const x = xs(i).toFixed(1), y = ys(v).toFixed(1);
@@ -381,13 +445,9 @@ function startPlayByPlay(matchResult, blueTeamName, redTeamName) {
       <polyline points="${lineStr}" fill="none" stroke="${_goldPoints[_goldPoints.length-1] >= 0 ? '#4fc3f7' : '#ff7b7b'}" stroke-width="1.5" stroke-linejoin="round"/>`;
   }
 
-  // Set advantage fill to 50% (neutral start)
   const fill = document.getElementById('advantage-fill');
   if (fill) { fill.style.transition = 'none'; fill.style.width = '50%'; }
 
-  // (gold-tug-fill removed — SVG chart reset already done above)
-
-  // Build the event queue: phase headers + events
   const PHASE_HEADERS = {
     laning:   '⚔️ Laning Phase  (0–14 min)',
     midgame:  '🐉 Mid Game  (14–26 min)',
@@ -403,16 +463,13 @@ function startPlayByPlay(matchResult, blueTeamName, redTeamName) {
     }
   });
 
-  // Live stat tracking
   const live = { blue: { kills:0, towers:0, dragons:0, barons:0 }, red: { kills:0, towers:0, dragons:0, barons:0 } };
-
-  const DELAY = 3200; // ms per line
   let idx = 0;
-  let skipped = false;
+  let finished = false;
 
   function updateLiveScoreBar(ev) {
     if (ev.killBlue !== undefined)    { live[ev.killBlue?'blue':'red'].kills++; }
-    if (ev.tfBlueKills !== undefined) { live.blue.kills += ev.tfBlueKills; live.red.kills += ev.tfRedKills; }
+    if (ev.tfBlueKills !== undefined) { live.blue.kills += ev.tfBlueKills || 0; live.red.kills += ev.tfRedKills || 0; }
     if (ev.towerBlue !== undefined)   { live[ev.towerBlue?'blue':'red'].towers++; }
     if (ev.dragonBlue !== undefined)  { live[ev.dragonBlue?'blue':'red'].dragons++; }
     if (ev.baronBlue !== undefined)   { live[ev.baronBlue?'blue':'red'].barons++; }
@@ -435,7 +492,6 @@ function startPlayByPlay(matchResult, blueTeamName, redTeamName) {
       }
     }
 
-    // Gold chart: add point and redraw
     if (ev.goldDiff !== undefined) {
       _goldPoints.push(ev.goldDiff);
       redrawGoldChart();
@@ -448,7 +504,6 @@ function startPlayByPlay(matchResult, blueTeamName, redTeamName) {
       el.className = 'pbp-phase-header';
       el.textContent = ev.text;
     } else {
-      // Determine which side won this event for color coding
       const blueWon = ev.killBlue    !== undefined ? ev.killBlue   :
                       ev.towerBlue   !== undefined ? ev.towerBlue  :
                       ev.dragonBlue  !== undefined ? ev.dragonBlue :
@@ -461,44 +516,50 @@ function startPlayByPlay(matchResult, blueTeamName, redTeamName) {
       if (typeof updateMap === 'function') updateMap(ev);
     }
     eventsEl.appendChild(el);
-    // Trigger animation
     requestAnimationFrame(() => el.classList.add('pbp-visible'));
     el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   function revealNext() {
+    if (finished) return;
+    if (_pbpPaused) { _pbpRevealFn = revealNext; return; }
     if (idx >= queue.length) {
       onPlayByPlayComplete();
       return;
     }
     addEventLine(queue[idx++]);
-    const t = setTimeout(revealNext, DELAY);
-    _pbpTimeouts.push(t);
+    if (_pbpCurrentDelay === 0) {
+      // Instant: schedule on next microtask to avoid stack overflow
+      _pbpRevealFn = revealNext;
+      const t = setTimeout(revealNext, 0);
+      _pbpTimeouts.push(t);
+    } else if (_pbpCurrentDelay < Infinity) {
+      _pbpRevealFn = revealNext;
+      const t = setTimeout(revealNext, _pbpCurrentDelay);
+      _pbpTimeouts.push(t);
+    } else {
+      // Paused — store for resume
+      _pbpRevealFn = revealNext;
+    }
   }
 
   function skipAll() {
-    if (skipped) return;
-    skipped = true;
+    if (finished) return;
+    finished = true;
     if (typeof setMapSkipMode === 'function') setMapSkipMode(true);
     _pbpTimeouts.forEach(t => clearTimeout(t));
     _pbpTimeouts = [];
-    // Reveal all remaining at once
     while (idx < queue.length) addEventLine(queue[idx++]);
     if (typeof setMapSkipMode === 'function') setMapSkipMode(false);
     onPlayByPlayComplete();
   }
 
-  if (skipBtn) {
-    skipBtn.onclick = skipAll;
-    skipBtn.style.display = 'inline-block';
-  }
-
   function onPlayByPlayComplete() {
-    if (skipBtn) skipBtn.style.display = 'none';
-    // Show final canonical stats in score bar
+    finished = true;
+    // Hide speed controls
+    if (ctrlEl) ctrlEl.innerHTML = '';
     updateScoreBar(matchResult);
-    // Show final gold totals only if realistic (both teams earned meaningful CS gold)
-    const gt = document.getElementById('gold-totals');
+    const gt  = document.getElementById('gold-totals');
     const gbt = document.getElementById('gold-blue-total');
     const grt = document.getElementById('gold-red-total');
     if (gt && gbt && grt && matchResult.stats) {
@@ -510,11 +571,9 @@ function startPlayByPlay(matchResult, blueTeamName, redTeamName) {
         gt.style.display = 'flex';
       }
     }
-    // Apply result and show inline results
     applyMatchResultAndShowInline();
   }
 
-  // Start after brief delay
   const t0 = setTimeout(revealNext, 400);
   _pbpTimeouts.push(t0);
 }

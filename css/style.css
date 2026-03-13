@@ -134,16 +134,22 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
 .star-badge.s2{color:var(--t3);}
 .star-badge.s3{color:#ffd700;}
 
-.card-region{font-size:10px;color:var(--text-dim);padding:2px 8px;border-bottom:1px solid var(--border);}
-
-.card-traits{display:flex;gap:3px;flex-wrap:wrap;padding:4px 8px;border-bottom:1px solid var(--border);min-height:24px;}
-.trait-chip{font-size:10px;border:1px solid;border-radius:3px;padding:1px 5px;background:#ffffff08;}
+.card-region{display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);padding:2px 8px;border-bottom:1px solid var(--border);}
+.card-age{font-size:10px;color:var(--text-dim);}
 
 .card-champs{font-size:10px;color:var(--text-dim);padding:3px 8px;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
 .card-stats{display:flex;flex-wrap:wrap;gap:2px;padding:4px 8px;flex:1;}
-.stat-pip{background:#0d1a2a;border:1px solid var(--border);border-radius:2px;padding:1px 4px;font-size:10px;color:var(--text-dim);}
-.stat-pip b{color:var(--blue-l);margin-left:2px;}
+.stat-pip{background:#0d1a2a;border:1px solid var(--border);border-radius:2px;padding:1px 4px;font-size:10px;color:var(--text-dim);cursor:default;}
+.stat-pip b{color:var(--bar-c,var(--blue-l));margin-left:2px;}
+
+/* FM Attribute bars in synergy panel */
+.attr-row{display:flex;align-items:center;gap:5px;padding:1px 0;}
+.attr-name{font-size:10px;color:var(--text-dim);width:110px;flex-shrink:0;}
+.attr-bar-bg{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+.attr-bar-fill{height:100%;border-radius:3px;transition:width 0.3s;}
+.attr-val{font-size:10px;color:var(--text);width:28px;text-align:right;flex-shrink:0;}
+.attr-section-label{font-size:10px;font-weight:700;color:var(--gold-dim);margin-top:6px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.4px;}
 
 .card-actions{padding:5px 8px;border-top:1px solid var(--border);}
 .card-btn-row{display:flex;gap:4px;}
@@ -330,6 +336,15 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
 
 /* ── Play-by-Play ─────────────────────────────────────────────────────── */
 .pbp-controls { display:flex; justify-content:flex-end; padding:6px 0; }
+.speed-controls { display:flex; align-items:center; gap:6px; }
+.speed-label    { font-size:11px; color:var(--text-dim); margin-right:2px; }
+.speed-btn {
+  padding:4px 10px; font-size:12px; border-radius:6px;
+  background:var(--surface); border:1px solid var(--border);
+  color:var(--text-dim); cursor:pointer; transition:all 0.15s;
+}
+.speed-btn:hover { background:var(--surface-alt); color:var(--text); }
+.speed-active    { background:var(--gold) !important; color:#000 !important; border-color:var(--gold) !important; font-weight:700; }
 .pbp-events {
   max-height: 420px;
   overflow-y: auto;
