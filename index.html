@@ -2,319 +2,279 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rift Manager — LoL Auto-Battler</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rift Manager</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
-<!-- ══════════════ SETUP ══════════════ -->
-<div id="screen-setup" class="screen active">
-  <div class="setup-container">
-    <div class="setup-logo">⚔️</div>
-    <h1 class="game-title">RIFT MANAGER</h1>
-    <p class="game-subtitle">Draft LoL pros. Build synergies. Win the Finals.</p>
-    <div class="setup-form">
-      <label for="team-name-input">Team Name</label>
-      <input type="text" id="team-name-input" placeholder="e.g. Team Phoenix..." maxlength="24" />
-      <button id="btn-start-game" class="btn-primary btn-large">▶ Start Season</button>
-    </div>
-    <div class="setup-hints">
-      <div class="hint">🛒 Auto-battler shop — buy, sell, upgrade pros</div>
-      <div class="hint">⭐ Build trait &amp; region synergies</div>
-      <div class="hint">⚔️ Phase-by-phase match simulation</div>
-      <div class="hint">🏆 14-round season → top 4 playoffs</div>
-    </div>
+<!-- ══════════════════════════════════════════════════════════════════
+     INTRO / TEAM SELECT SCREEN
+     ══════════════════════════════════════════════════════════════════ -->
+<div id="screen-intro" class="screen intro-screen active">
+  <div class="intro-logo">
+    <div class="intro-title">RIFT MANAGER</div>
+    <div class="intro-sub">The LoL Esports Career Simulation</div>
+  </div>
+  <div class="intro-card">
+    <h2>Select Your Team</h2>
+    <p class="intro-hint">You are joining the LCS as a first-time head coach. Choose your team wisely.</p>
+    <div id="team-select-grid" class="team-select-grid"></div>
+    <button class="btn-start" id="btn-start" disabled onclick="onStartGame()">Start Career</button>
   </div>
 </div>
 
-<!-- ══════════════ GAME SCREEN ══════════════ -->
-<div id="screen-game" class="screen">
+<!-- ══════════════════════════════════════════════════════════════════
+     MAIN GAME SHELL
+     ══════════════════════════════════════════════════════════════════ -->
+<div id="screen-game" class="screen game-shell">
 
-  <header class="game-header">
-    <div class="header-left">
-      <span id="header-team-name" class="header-team"></span>
-      <span id="header-record"    class="header-record"></span>
+  <!-- Top Bar -->
+  <header class="top-bar">
+    <div class="top-bar-left">
+      <span class="top-team-name" id="top-team-name">—</span>
+      <span class="top-week" id="top-week">—</span>
     </div>
-    <div class="header-center">
-      <span id="header-phase" class="header-phase"></span>
+    <div class="top-bar-center">
+      <div class="top-stat"><span class="ts-label">Budget</span><span class="ts-val" id="top-budget">—</span></div>
+      <div class="top-stat"><span class="ts-label">Wages/wk</span><span class="ts-val" id="top-wages">—</span></div>
+      <div class="top-stat"><span class="ts-label">Fans</span><span class="ts-val" id="top-fans">—</span></div>
+      <div class="top-stat"><span class="ts-label">Record</span><span class="ts-val" id="top-record">0W 0L</span></div>
     </div>
-    <div class="header-right">
-      <span class="resource-badge gold-badge">💰 <span id="header-gold">0</span>g</span>
-      <span class="resource-badge level-badge">Lv <span id="header-level">1</span></span>
+    <div class="top-bar-right">
+      <button class="btn-advance" id="btn-advance" onclick="onAdvanceWeek()">Advance ▶</button>
     </div>
   </header>
 
-  <nav class="tab-nav">
-    <button class="tab-btn active" data-tab="shop">🛒 Shop</button>
-    <button class="tab-btn" data-tab="standings">📊 Standings</button>
-  </nav>
+  <!-- Sidebar + Content -->
+  <div class="game-body">
+    <nav class="sidebar">
+      <a class="nav-item active" data-screen="dashboard" onclick="showMain('dashboard')">🏠 Dashboard</a>
+      <a class="nav-item" data-screen="squad"      onclick="showMain('squad')">👥 Squad</a>
+      <a class="nav-item" data-screen="tactics"    onclick="showMain('tactics')">⚔️ Tactics</a>
+      <a class="nav-item" data-screen="training"   onclick="showMain('training')">🎯 Training</a>
+      <a class="nav-item" data-screen="transfers"  onclick="showMain('transfers')">💼 Transfers</a>
+      <a class="nav-item" data-screen="scouting"   onclick="showMain('scouting')">🔭 Scouting</a>
+      <a class="nav-item" data-screen="finances"   onclick="showMain('finances')">💰 Finances</a>
+      <div class="nav-divider"></div>
+      <a class="nav-item" data-screen="league"     onclick="showMain('league')">🏆 League</a>
+      <a class="nav-item" data-screen="schedule"   onclick="showMain('schedule')">📅 Schedule</a>
+    </nav>
 
-  <!-- ── SHOP TAB ── -->
-  <div id="tab-shop" class="tab-content active">
-    <div class="shop-layout">
+    <main class="main-content" id="main-content">
 
-      <!-- Left: controls + shop + roster + bench -->
-      <div class="shop-main">
-
-        <div class="shop-controls">
-          <button id="btn-reroll"    class="btn-secondary">🔄 Reroll <span class="cost-tag">2g</span></button>
-          <button id="btn-lock-shop" class="btn-secondary">🔒 Lock Shop</button>
-          <button id="btn-buy-xp"   class="btn-secondary">⬆️ Buy XP <span class="cost-tag">4g</span></button>
-          <div class="xp-area">
-            <div class="xp-bar-wrap"><div class="xp-bar"><div id="xp-fill" class="xp-fill"></div></div></div>
-            <span id="xp-label" class="xp-label">0/2 XP · Lv1</span>
+      <!-- DASHBOARD -->
+      <div id="panel-dashboard" class="panel active">
+        <div class="panel-header">Dashboard</div>
+        <div class="dashboard-grid">
+          <div class="dash-card dash-match">
+            <div class="dash-card-title">Next Match</div>
+            <div id="next-match-info" class="next-match-info">No upcoming match</div>
+            <button class="btn-primary" id="btn-play-match" onclick="onPlayMatch()" style="display:none">▶ Play Match</button>
           </div>
-        </div>
-
-        <div class="section-label">Shop</div>
-        <div id="shop-slots" class="card-row"></div>
-
-        <div class="section-label">
-          Active Roster
-          <span class="slot-note">5 slots · ▲ Start / ▼ Bench to swap</span>
-        </div>
-        <div id="active-roster" class="card-row"></div>
-
-        <div class="section-label">
-          Bench <span id="bench-count" class="slot-note">0/9</span>
-        </div>
-        <div id="bench-slots" class="card-row bench-row"></div>
-
-      </div>
-
-      <!-- Right: synergies + opponent + ready -->
-      <div class="shop-sidebar">
-
-        <div class="sidebar-card">
-          <div id="synergy-panel" class="synergy-panel">
-            <p class="syn-empty">Add players to see synergies</p>
+          <div class="dash-card dash-form">
+            <div class="dash-card-title">Your Team</div>
+            <div id="dash-team-stats"></div>
           </div>
-        </div>
-
-        <div class="sidebar-card">
-          <div class="sidebar-title">Next Opponent</div>
-          <div id="opponent-info"></div>
-        </div>
-
-        <button id="btn-ready" class="btn-primary btn-ready">⚔️ Ready for Battle</button>
-
-      </div>
-    </div>
-  </div>
-
-  <!-- ── STANDINGS TAB ── -->
-  <div id="tab-standings" class="tab-content">
-    <div style="padding:16px" id="standings-table"></div>
-  </div>
-
-</div><!-- /screen-game -->
-
-<!-- ══════════════ MATCH SCREEN ══════════════ -->
-<div id="screen-match" class="screen">
-  <div class="match-wrapper">
-
-    <div class="match-header">
-      <div class="team-banner blue-banner"><span id="match-blue-name">Your Team</span></div>
-      <div class="vs-circle">VS</div>
-      <div class="team-banner red-banner"><span id="match-red-name">Opponent</span></div>
-    </div>
-
-    <!-- Draft Phase -->
-    <div id="draft-phase" class="draft-phase">
-      <h3 class="phase-title">Champion Draft</h3>
-      <div class="draft-grid">
-        <div class="draft-col">
-          <div class="draft-col-label blue-text">Your Team</div>
-          <div id="draft-blue" class="draft-picks"></div>
-        </div>
-        <div class="draft-col">
-          <div class="draft-col-label red-text">Opponent</div>
-          <div id="draft-red" class="draft-picks"></div>
-        </div>
-      </div>
-      <div id="comp-synergies" class="comp-synergies"></div>
-      <div id="rating-compare" class="rating-compare"></div>
-      <button id="btn-start-match" class="btn-primary btn-large" style="margin-top:14px">▶ Simulate Match</button>
-    </div>
-
-    <!-- Play-by-Play Container (shown after clicking Simulate) -->
-    <div id="pbp-container" style="display:none">
-
-      <!-- Live score bar -->
-      <div class="score-bar">
-        <div class="score-side blue-score">
-          <span id="score-blue-kills">0K</span>
-          <span id="score-blue-dragons">🐉0</span>
-          <span id="score-blue-towers">🏰0</span>
-        </div>
-        <div class="adv-bar-wrap">
-          <div class="adv-bar"><div id="advantage-fill" class="adv-fill"></div></div>
-          <div class="adv-labels"><span>Blue</span><span>Red</span></div>
-        </div>
-        <div class="score-side red-score">
-          <span id="score-red-kills">0K</span>
-          <span id="score-red-dragons">🐉0</span>
-          <span id="score-red-towers">🏰0</span>
+          <div class="dash-card dash-standings">
+            <div class="dash-card-title">League Standings</div>
+            <div id="dash-standings" class="mini-standings"></div>
+          </div>
+          <div class="dash-card dash-news">
+            <div class="dash-card-title">Latest News</div>
+            <div id="dash-news" class="news-feed"></div>
+          </div>
         </div>
       </div>
 
-      <!-- Gold lead chart -->
-      <div class="gold-chart-wrap">
-        <svg id="gold-chart-svg" class="gold-chart-svg" preserveAspectRatio="none"></svg>
-        <div id="gold-totals" class="gold-totals" style="display:none">
-          <span id="gold-blue-total" class="gold-blue-total"></span>
-          <span class="gold-totals-sep">|</span>
-          <span id="gold-red-total" class="gold-red-total"></span>
+      <!-- SQUAD -->
+      <div id="panel-squad" class="panel">
+        <div class="panel-header">
+          Squad
+          <div class="panel-tabs">
+            <button class="ptab active" onclick="showSquadTab('starters')">Starting 5</button>
+            <button class="ptab" onclick="showSquadTab('academy')">Academy</button>
+          </div>
+        </div>
+        <div id="squad-content"></div>
+      </div>
+
+      <!-- PLAYER PROFILE -->
+      <div id="panel-player" class="panel">
+        <div class="panel-header">
+          <button class="btn-back" onclick="showMain('squad')">← Back</button>
+          <span id="player-profile-name">Player</span>
+        </div>
+        <div id="player-profile-content"></div>
+      </div>
+
+      <!-- TACTICS -->
+      <div id="panel-tactics" class="panel">
+        <div class="panel-header">Tactics</div>
+        <div id="tactics-content"></div>
+      </div>
+
+      <!-- TRAINING -->
+      <div id="panel-training" class="panel">
+        <div class="panel-header">Training</div>
+        <div class="coming-soon">
+          <div class="cs-icon">🎯</div>
+          <div class="cs-title">Training</div>
+          <div class="cs-desc">Set weekly focus: Scrimmages improve teamwork, Solo Queue builds individual mechanics, Streaming grows your fanbase. Coming soon.</div>
         </div>
       </div>
 
-      <!-- Two-column body: map left, events right -->
-      <div class="pbp-body-wrap">
-
-        <!-- Map column -->
-        <div class="pbp-map-col">
-          <svg id="pbp-map-svg" class="pbp-map-svg" viewBox="0 0 300 300" preserveAspectRatio="xMidYMid meet">
-
-            <!-- ── Static map background ── -->
-            <rect x="0" y="0" width="300" height="300" fill="#0c1a0c"/>
-
-            <!-- Lane paths (L-shapes for top/bot, diagonal for mid) -->
-            <polyline points="22,278 22,22 278,22"
-                      stroke="#152815" stroke-width="26" fill="none"
-                      stroke-linejoin="round" stroke-linecap="round"/>
-            <polyline points="22,278 278,278 278,22"
-                      stroke="#152815" stroke-width="26" fill="none"
-                      stroke-linejoin="round" stroke-linecap="round"/>
-            <line x1="22" y1="285" x2="285" y2="22"
-                  stroke="#152815" stroke-width="20" stroke-linecap="round"/>
-
-            <!-- River diagonal band -->
-            <polygon points="0,140 140,0 160,0 300,140 300,160 160,300 140,300 0,160"
-                     fill="#0d2535" opacity="0.55"/>
-
-            <!-- Blue base (bottom-left) -->
-            <rect x="2" y="258" width="42" height="42" rx="5" fill="#061630" opacity="0.95"/>
-            <text x="23" y="277" text-anchor="middle" fill="#4fc3f7" font-size="8" font-weight="bold">BLU</text>
-            <text x="23" y="290" text-anchor="middle" fill="#4fc3f7" font-size="7" opacity="0.7">BASE</text>
-
-            <!-- Red base (top-right) -->
-            <rect x="256" y="2" width="42" height="42" rx="5" fill="#300606" opacity="0.95"/>
-            <text x="277" y="21" text-anchor="middle" fill="#ff7b7b" font-size="8" font-weight="bold">RED</text>
-            <text x="277" y="34" text-anchor="middle" fill="#ff7b7b" font-size="7" opacity="0.7">BASE</text>
-
-            <!-- Baron pit (top-left of river) -->
-            <circle cx="78" cy="78" r="17" fill="#130c22" stroke="#9b59b6" stroke-width="1.5" opacity="0.9"/>
-            <text x="78" y="83" text-anchor="middle" fill="#9b59b6" font-size="13">🟣</text>
-
-            <!-- Dragon pit (bottom-right of river) -->
-            <circle cx="222" cy="222" r="17" fill="#1a2508" stroke="#c89b3c" stroke-width="1.5" opacity="0.9"/>
-            <text x="222" y="227" text-anchor="middle" fill="#c89b3c" font-size="13">🐉</text>
-
-            <!-- Tower markers (very subtle dots) -->
-            <circle cx="22"  cy="88"  r="4" fill="#4fc3f7" opacity="0.22"/>
-            <circle cx="112" cy="188" r="4" fill="#4fc3f7" opacity="0.22"/>
-            <circle cx="88"  cy="272" r="4" fill="#4fc3f7" opacity="0.22"/>
-            <circle cx="278" cy="212" r="4" fill="#ff7b7b" opacity="0.22"/>
-            <circle cx="188" cy="112" r="4" fill="#ff7b7b" opacity="0.22"/>
-            <circle cx="212" cy="22"  r="4" fill="#ff7b7b" opacity="0.22"/>
-
-            <!-- ── Dynamic player dots (positions set by map.js) ── -->
-            <g id="map-blue-dots">
-              <circle id="map-b-top"     class="map-dot map-dot-blue" r="9" cx="28"  cy="75"/>
-              <circle id="map-b-jungle"  class="map-dot map-dot-blue" r="9" cx="82"  cy="170"/>
-              <circle id="map-b-mid"     class="map-dot map-dot-blue" r="9" cx="92"  cy="208"/>
-              <circle id="map-b-adc"     class="map-dot map-dot-blue" r="9" cx="72"  cy="268"/>
-              <circle id="map-b-support" class="map-dot map-dot-blue" r="9" cx="90"  cy="274"/>
-            </g>
-            <g id="map-red-dots">
-              <circle id="map-r-top"     class="map-dot map-dot-red" r="9" cx="272" cy="28"/>
-              <circle id="map-r-jungle"  class="map-dot map-dot-red" r="9" cx="218" cy="132"/>
-              <circle id="map-r-mid"     class="map-dot map-dot-red" r="9" cx="208" cy="92"/>
-              <circle id="map-r-adc"     class="map-dot map-dot-red" r="9" cx="228" cy="268"/>
-              <circle id="map-r-support" class="map-dot map-dot-red" r="9" cx="210" cy="274"/>
-            </g>
-
-            <!-- Labels on top of dots -->
-            <g id="map-blue-labels" style="pointer-events:none">
-              <text id="map-b-top-lbl"     class="map-dot-lbl" x="28"  y="79">T</text>
-              <text id="map-b-jungle-lbl"  class="map-dot-lbl" x="82"  y="174">J</text>
-              <text id="map-b-mid-lbl"     class="map-dot-lbl" x="92"  y="212">M</text>
-              <text id="map-b-adc-lbl"     class="map-dot-lbl" x="72"  y="272">A</text>
-              <text id="map-b-support-lbl" class="map-dot-lbl" x="90"  y="278">S</text>
-            </g>
-            <g id="map-red-labels" style="pointer-events:none">
-              <text id="map-r-top-lbl"     class="map-dot-lbl" x="272" y="32">T</text>
-              <text id="map-r-jungle-lbl"  class="map-dot-lbl" x="218" y="136">J</text>
-              <text id="map-r-mid-lbl"     class="map-dot-lbl" x="208" y="96">M</text>
-              <text id="map-r-adc-lbl"     class="map-dot-lbl" x="228" y="272">A</text>
-              <text id="map-r-support-lbl" class="map-dot-lbl" x="210" y="278">S</text>
-            </g>
-
-            <!-- Event flash ring (animated by map.js) -->
-            <circle id="map-event-ring" cx="150" cy="150" r="0"
-                    fill="none" stroke="#c89b3c" stroke-width="2" opacity="0"/>
-          </svg>
-
-          <div class="pbp-map-legend">
-            <span class="map-leg-blue">● Blue</span>
-            <span class="map-leg-red">● Red</span>
-            <span class="map-leg-dim">⬤ = dead</span>
+      <!-- TRANSFERS -->
+      <div id="panel-transfers" class="panel">
+        <div class="panel-header">
+          Transfers
+          <div class="panel-tabs">
+            <button class="ptab active" onclick="showTransferTab('free-agents')">Free Agents</button>
+            <button class="ptab" onclick="showTransferTab('listed')">Listed</button>
           </div>
         </div>
+        <div id="transfers-content"></div>
+      </div>
 
-        <!-- Events column -->
-        <div class="pbp-event-col">
-          <div class="pbp-controls">
-            <button id="btn-skip-pbp" class="btn-secondary" style="display:none">⏩ Skip to End</button>
-          </div>
-
-          <!-- Events scroll area -->
-          <div id="pbp-events" class="pbp-events"></div>
-
-          <!-- Inline results (shown after events complete) -->
-          <div id="pbp-results" class="pbp-results" style="display:none">
-            <div id="pbp-results-content"></div>
-            <button id="btn-continue" class="btn-primary btn-large">Continue →</button>
-          </div>
+      <!-- SCOUTING -->
+      <div id="panel-scouting" class="panel">
+        <div class="panel-header">Scouting</div>
+        <div class="coming-soon">
+          <div class="cs-icon">🔭</div>
+          <div class="cs-title">Scouting Network</div>
+          <div class="cs-desc">Send scouts to LCK, LPL, LEC and beyond to uncover hidden talent. Coming soon.</div>
         </div>
+      </div>
 
-      </div><!-- /.pbp-body-wrap -->
+      <!-- FINANCES -->
+      <div id="panel-finances" class="panel">
+        <div class="panel-header">Finances</div>
+        <div id="finances-content"></div>
+      </div>
 
-    </div>
+      <!-- LEAGUE -->
+      <div id="panel-league" class="panel">
+        <div class="panel-header">LCS — Spring Split 2025</div>
+        <div id="league-content"></div>
+      </div>
 
+      <!-- SCHEDULE -->
+      <div id="panel-schedule" class="panel">
+        <div class="panel-header">Season Schedule</div>
+        <div id="schedule-content"></div>
+      </div>
+
+    </main>
   </div>
 </div>
 
-<!-- ══════════════ BRACKET SCREEN ══════════════ -->
-<div id="screen-bracket" class="screen">
-  <div class="bracket-wrapper">
-    <h2 class="bracket-title">🏆 Playoffs</h2>
-    <div id="bracket-view" class="bracket-view"></div>
-    <button id="btn-bracket-continue" class="btn-primary btn-large" style="display:none;margin-top:24px;">Continue →</button>
+<!-- ══════════════════════════════════════════════════════════════════
+     MATCH VIEWER
+     ══════════════════════════════════════════════════════════════════ -->
+<div id="screen-match" class="screen match-screen">
+
+  <div class="match-header">
+    <button class="btn-back match-back" onclick="returnFromMatch()">← Back</button>
+    <div class="match-teams">
+      <span class="match-team-blue" id="match-team-blue">Blue</span>
+      <span class="match-vs">vs</span>
+      <span class="match-team-red" id="match-team-red">Red</span>
+    </div>
+    <div class="match-live-score">
+      <span id="score-blue-kills">0K</span>
+      <span id="score-blue-dragons">🐉0</span>
+      <span id="score-blue-towers">🏰0</span>
+      <span class="score-divider">·</span>
+      <span id="score-red-kills">0K</span>
+      <span id="score-red-dragons">🐉0</span>
+      <span id="score-red-towers">🏰0</span>
+    </div>
+    <div id="score-bar-wrap" class="score-bar-wrap">
+      <div id="advantage-fill" class="advantage-fill" style="width:50%"></div>
+    </div>
   </div>
+
+  <!-- Draft -->
+  <div id="draft-phase" class="draft-phase">
+    <div class="draft-title">Champion Draft</div>
+    <div id="draft-picks" class="draft-picks"></div>
+    <div id="comp-synergies" class="comp-synergies"></div>
+    <div class="draft-actions">
+      <button class="btn-primary" onclick="onStartMatch()">▶ Watch Match</button>
+      <button class="btn-secondary" onclick="onSkipMatch()">⏭ Skip to Result</button>
+    </div>
+  </div>
+
+  <!-- PBP -->
+  <div id="pbp-container" class="pbp-container" style="display:none">
+    <div class="pbp-body-wrap">
+      <div class="pbp-map-wrap">
+        <svg id="pbp-map-svg" class="pbp-map-svg" viewBox="0 0 300 300">
+          <rect width="300" height="300" fill="#0d1f0d" rx="4"/>
+          <line x1="0" y1="300" x2="300" y2="0" stroke="#1a3a1a" stroke-width="28"/>
+          <ellipse cx="78" cy="78" rx="22" ry="18" fill="#1a2a3a" stroke="#2a3a5a" stroke-width="1.5"/>
+          <text x="78" y="82" text-anchor="middle" font-size="9" fill="#4a6a8a">BARON</text>
+          <ellipse cx="222" cy="222" rx="22" ry="18" fill="#2a1a0a" stroke="#4a3a1a" stroke-width="1.5"/>
+          <text x="222" y="226" text-anchor="middle" font-size="9" fill="#8a6a2a">DRAKE</text>
+          <rect x="2" y="240" width="58" height="58" rx="4" fill="#0d1a2a" stroke="#1e3050" stroke-width="1.5"/>
+          <text x="31" y="274" text-anchor="middle" font-size="8" fill="#4fc3f7">BASE</text>
+          <rect x="240" y="2" width="58" height="58" rx="4" fill="#2a0d0d" stroke="#501e1e" stroke-width="1.5"/>
+          <text x="269" y="36" text-anchor="middle" font-size="8" fill="#ff7b7b">BASE</text>
+          <line x1="60" y1="240" x2="240" y2="60" stroke="#1a3a1a" stroke-width="10" stroke-linecap="round"/>
+          <polyline points="18,240 18,18 240,18" fill="none" stroke="#1a3a1a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="60,282 282,282 282,60" fill="none" stroke="#1a3a1a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle id="map-event-ring" cx="150" cy="150" r="0" fill="none" stroke="#fff" stroke-width="2.5" opacity="0"/>
+          <circle id="map-b-top"     class="map-dot map-dot-blue" cx="28"  cy="165" r="7"/>
+          <circle id="map-b-jungle"  class="map-dot map-dot-blue" cx="82"  cy="170" r="7"/>
+          <circle id="map-b-mid"     class="map-dot map-dot-blue" cx="92"  cy="208" r="7"/>
+          <circle id="map-b-adc"     class="map-dot map-dot-blue" cx="72"  cy="268" r="7"/>
+          <circle id="map-b-support" class="map-dot map-dot-blue" cx="90"  cy="274" r="7"/>
+          <text id="map-b-top-lbl"     class="map-dot-lbl" x="28"  y="169">T</text>
+          <text id="map-b-jungle-lbl"  class="map-dot-lbl" x="82"  y="174">J</text>
+          <text id="map-b-mid-lbl"     class="map-dot-lbl" x="92"  y="212">M</text>
+          <text id="map-b-adc-lbl"     class="map-dot-lbl" x="72"  y="272">A</text>
+          <text id="map-b-support-lbl" class="map-dot-lbl" x="90"  y="278">S</text>
+          <circle id="map-r-top"     class="map-dot map-dot-red" cx="272" cy="45"  r="7"/>
+          <circle id="map-r-jungle"  class="map-dot map-dot-red" cx="218" cy="132" r="7"/>
+          <circle id="map-r-mid"     class="map-dot map-dot-red" cx="208" cy="92"  r="7"/>
+          <circle id="map-r-adc"     class="map-dot map-dot-red" cx="228" cy="268" r="7"/>
+          <circle id="map-r-support" class="map-dot map-dot-red" cx="210" cy="274" r="7"/>
+          <text id="map-r-top-lbl"     class="map-dot-lbl" x="272" y="49">T</text>
+          <text id="map-r-jungle-lbl"  class="map-dot-lbl" x="218" y="136">J</text>
+          <text id="map-r-mid-lbl"     class="map-dot-lbl" x="208" y="96">M</text>
+          <text id="map-r-adc-lbl"     class="map-dot-lbl" x="228" y="272">A</text>
+          <text id="map-r-support-lbl" class="map-dot-lbl" x="210" y="278">S</text>
+        </svg>
+        <div class="pbp-map-legend">
+          <span class="map-leg-blue">● Blue</span>
+          <span class="map-leg-red">● Red</span>
+          <span class="map-leg-dim">T J M A S</span>
+        </div>
+        <div class="gold-chart-wrap">
+          <div class="gold-chart-label">Gold Lead</div>
+          <svg id="gold-chart-svg" class="gold-chart-svg" height="64"></svg>
+          <div id="gold-totals" class="gold-totals" style="display:none"></div>
+        </div>
+      </div>
+      <div class="pbp-feed-wrap">
+        <div class="pbp-controls"></div>
+        <div id="pbp-events" class="pbp-events"></div>
+      </div>
+    </div>
+    <div id="pbp-results" class="pbp-results" style="display:none"></div>
+  </div>
+
 </div>
 
-<!-- ══════════════ GAME OVER ══════════════ -->
-<div id="screen-gameover" class="screen">
-  <div class="gameover-wrapper">
-    <div id="gameover-content"></div>
-    <button id="btn-play-again" class="btn-primary btn-large">🔄 Play Again</button>
-  </div>
-</div>
-
-<div id="toast" class="toast"></div>
-
-<!-- Load order matters — no bundler -->
-<script src="js/data/config.js"></script>
+<!-- Scripts -->
+<script src="js/data/teams.js"></script>
 <script src="js/data/champions.js"></script>
 <script src="js/data/players.js"></script>
-<script src="js/game/economy.js"></script>
-<script src="js/game/shop.js"></script>
+<script src="js/game/state.js"></script>
 <script src="js/game/simulation.js"></script>
-<script src="js/game/tournament.js"></script>
 <script src="js/ui/map.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
+
 </body>
 </html>
