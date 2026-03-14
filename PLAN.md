@@ -340,8 +340,8 @@ Personality affects: training gains, morale events, locker room chemistry, perfo
 **Status:** [ ] Partial (1 region, Spring split only)
 
 ### 7A — Verdant League (full structure)
-- 8 teams, 7-week round-robin (each plays every other team once)
-- Top 4 → playoffs (semi-finals + final)
+- 8 teams, 7-week round-robin (each plays every other team once in a best of 3 series)
+- Top 4 → playoffs (semi-finals + final) (both semi-finals and finals are a best of 5 series)
 - Spring split + Summer split per year
 - Season 1 only for prototype; expand later
 
