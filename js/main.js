@@ -101,6 +101,7 @@ function onSkipMatch() {
     _matchResult.blueRoots,   _matchResult.redRoots,
     _matchResult.winner === 'blue' ? 80 : 20
   );
+  _drawGoldChart(_matchResult.goldSnapshots);
   _showMatchResult(_matchResult);
 }
 
@@ -152,6 +153,40 @@ function _applyMatchResult() {
   );
 }
 
+// ─── Gold Chart ───────────────────────────────────────────────────────────────
+
+function _drawGoldChart(snapshots) {
+  const svg = document.getElementById('gold-chart-svg');
+  if (!svg || !snapshots || !snapshots.length) return;
+
+  const W = svg.clientWidth || 260;
+  const H = 64;
+  svg.setAttribute('width', W);
+
+  const maxLead = Math.max(1000, ...snapshots.map(s => Math.abs(s.lead)));
+  const midY    = H / 2;
+
+  // Build polyline points
+  const pts = snapshots.map((s, i) => {
+    const x = (i / (snapshots.length - 1 || 1)) * W;
+    const y = midY - (s.lead / maxLead) * (midY * 0.85);
+    return x.toFixed(1) + ',' + y.toFixed(1);
+  }).join(' ');
+
+  // Determine fill direction (above midline = blue, below = red)
+  const finalLead = snapshots[snapshots.length - 1].lead;
+
+  svg.innerHTML =
+    // Baseline
+    `<line x1="0" y1="${midY}" x2="${W}" y2="${midY}" stroke="#333" stroke-width="1"/>` +
+    // Blue lead area (above midline)
+    `<polyline points="0,${midY} ${pts} ${W},${midY}" fill="rgba(79,195,247,0.18)" stroke="none"/>` +
+    // Line
+    `<polyline points="${pts}" fill="none" stroke="${finalLead >= 0 ? '#4fc3f7' : '#ff7b7b'}" stroke-width="2" stroke-linejoin="round"/>` +
+    // Zero label
+    `<text x="3" y="${midY - 3}" font-size="9" fill="#555">0</text>`;
+}
+
 // ─── PBP ──────────────────────────────────────────────────────────────────────
 
 const PBP_DELAY = 850; // ms per event
@@ -178,6 +213,7 @@ function startPBP(events) {
     );
 
     if (ev.type === 'result') {
+      _drawGoldChart(_matchResult && _matchResult.goldSnapshots);
       _showMatchResult(_matchResult);
       return;
     }

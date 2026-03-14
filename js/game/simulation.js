@@ -1,4 +1,4 @@
-// js/game/simulation.js — Grove Manager Phase 4B
+// js/game/simulation.js — Grove Manager Phase 4C
 // Full stat-driven sim engine for The Ancient Grove.
 //
 // Public API (unchanged):
@@ -453,16 +453,45 @@ function initMatchState(blueTeamArr, redTeamArr, blueName, redName, blueStyle, r
   _ev = [];
   _ms = {
     t: 0,
-    blueName: blueName,
-    redName:  redName,
+    blueName:  blueName,
+    redName:   redName,
     blueStyle: blueStyle,
     redStyle:  redStyle,
-    blue: { players: blueTeamArr, kills: 0, shrines: 0, roots: 0 },
-    red:  { players: redTeamArr,  kills: 0, shrines: 0, roots: 0 },
+    blue: { players: blueTeamArr, kills: 0, shrines: 0, roots: 0, gold: 0 },
+    red:  { players: redTeamArr,  kills: 0, shrines: 0, roots: 0, gold: 0 },
     adv:    50,
     winner: null,
     draft:  null,
+    // Gold lead snapshots for the chart: array of { t, lead } (positive = blue ahead)
+    goldSnapshots: [],
   };
+}
+
+// Advance gold simulation — called after each major event.
+// Gold flows from kills, cs, objectives; winner naturally accumulates faster.
+function tickGold() {
+  var W    = _ms.winner;
+  var t    = _ms.t;
+  // Base gold per minute: ~400/min per player, 5 players = 2000/min each team
+  var basePerMin = 2000;
+  var dt   = Math.max(0.5, t - (_ms._lastGoldTick || 0));
+  _ms._lastGoldTick = t;
+
+  // Gold from cs (winner farms slightly better due to map pressure)
+  var bCs  = basePerMin * dt * (W === 'blue' ? 1.04 : 0.96);
+  var rCs  = basePerMin * dt * (W === 'red'  ? 1.04 : 0.96);
+  // Gold from kills (300 per kill)
+  var bKg  = _ms.blue.kills * 300;
+  var rKg  = _ms.red.kills  * 300;
+  // Gold from objectives
+  var bObj = (_ms.blue.shrines * 150) + (_ms.blue.roots * 250);
+  var rObj = (_ms.red.shrines  * 150) + (_ms.red.roots  * 250);
+
+  _ms.blue.gold = Math.round(bCs + bKg + bObj);
+  _ms.red.gold  = Math.round(rCs + rKg + rObj);
+
+  var lead = _ms.blue.gold - _ms.red.gold;
+  _ms.goldSnapshots.push({ t: Math.round(t * 10) / 10, lead: lead });
 }
 
 function getPlayer(side, pos) {
@@ -496,6 +525,7 @@ function getStat(side, pos, stat) {
 
 function pushEv(type, text, sceneName, opts) {
   opts = opts || {};
+  tickGold();
   var ev = {
     type:        type,
     time:        fmt(_ms.t),
@@ -508,6 +538,8 @@ function pushEv(type, text, sceneName, opts) {
     blueRoots:   _ms.blue.roots,
     redRoots:    _ms.red.roots,
     advAfter:    Math.round(_ms.adv),
+    blueGold:    _ms.blue.gold,
+    redGold:     _ms.red.gold,
   };
   Object.keys(opts).forEach(function(k) { ev[k] = opts[k]; });
   _ev.push(ev);
@@ -1035,15 +1067,18 @@ function simulateMatch(blueTeamArr, redTeamArr, blueName, redName) {
   runBloom();
 
   return {
-    winner:      _ms.winner,
-    events:      _ev,
-    blueKills:   _ms.blue.kills,
-    redKills:    _ms.red.kills,
-    blueShrines: _ms.blue.shrines,
-    redShrines:  _ms.red.shrines,
-    blueRoots:   _ms.blue.roots,
-    redRoots:    _ms.red.roots,
-    duration:    Math.floor(_ms.t),
-    draft:       draft,
+    winner:        _ms.winner,
+    events:        _ev,
+    blueKills:     _ms.blue.kills,
+    redKills:      _ms.red.kills,
+    blueShrines:   _ms.blue.shrines,
+    redShrines:    _ms.red.shrines,
+    blueRoots:     _ms.blue.roots,
+    redRoots:      _ms.red.roots,
+    duration:      Math.floor(_ms.t),
+    draft:         draft,
+    goldSnapshots: _ms.goldSnapshots,
+    blueGoldFinal: _ms.blue.gold,
+    redGoldFinal:  _ms.red.gold,
   };
 }
