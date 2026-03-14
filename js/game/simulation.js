@@ -1,4 +1,4 @@
-// js/game/simulation.js — Grove Manager Phase 4C
+// js/game/simulation.js — Grove Manager Phase 4D
 // Full stat-driven sim engine for The Ancient Grove.
 //
 // Public API (unchanged):
@@ -449,6 +449,37 @@ function quickSimulate(blueTeamArr, redTeamArr) {
 var _ms = null; // live match state
 var _ev = null; // event list
 
+// Position order must match POS_IDX = { vanguard:0, ranger:1, arcanist:2, hunter:3, warden:4 }
+var POSITIONS = ['vanguard', 'ranger', 'arcanist', 'hunter', 'warden'];
+
+// Kill probability by position — who is most likely to get the kill credit
+// hunter and arcanist are primary damage dealers; warden almost never takes kills
+var KILL_PROB  = [10, 20, 30, 35, 5];  // vanguard, ranger, arcanist, hunter, warden
+// Death probability — tanks and frontliners die more often, hunters sometimes
+var DEATH_PROB = [30, 20, 25, 15, 10]; // vanguard, ranger, arcanist, hunter, warden
+
+function weightedRolePick(probs) {
+  var total = probs.reduce(function(s, v) { return s + v; }, 0);
+  var r = Math.random() * total;
+  for (var i = 0; i < probs.length; i++) { r -= probs[i]; if (r <= 0) return i; }
+  return 0;
+}
+
+function initPerf() {
+  return [0,1,2,3,4].map(function() { return { kills: 0, assists: 0, deaths: 0 }; });
+}
+
+// Attribute one kill: killerSide player gets kill, victimSide player gets death, teammates get assists
+function attributeKillEvent(killerSide, victimSide) {
+  var killerIdx = weightedRolePick(KILL_PROB);
+  var victimIdx = weightedRolePick(DEATH_PROB);
+  _ms[killerSide].perf[killerIdx].kills++;
+  _ms[victimSide].perf[victimIdx].deaths++;
+  for (var i = 0; i < 5; i++) {
+    if (i !== killerIdx) _ms[killerSide].perf[i].assists++;
+  }
+}
+
 function initMatchState(blueTeamArr, redTeamArr, blueName, redName, blueStyle, redStyle) {
   _ev = [];
   _ms = {
@@ -457,8 +488,8 @@ function initMatchState(blueTeamArr, redTeamArr, blueName, redName, blueStyle, r
     redName:   redName,
     blueStyle: blueStyle,
     redStyle:  redStyle,
-    blue: { players: blueTeamArr, kills: 0, shrines: 0, roots: 0, gold: 0 },
-    red:  { players: redTeamArr,  kills: 0, shrines: 0, roots: 0, gold: 0 },
+    blue: { players: blueTeamArr, kills: 0, shrines: 0, roots: 0, gold: 0, perf: initPerf() },
+    red:  { players: redTeamArr,  kills: 0, shrines: 0, roots: 0, gold: 0, perf: initPerf() },
     adv:    50,
     winner: null,
     draft:  null,
@@ -547,6 +578,8 @@ function pushEv(type, text, sceneName, opts) {
 
 function doKill(killerSide, text, sceneName, opts) {
   _ms[killerSide].kills++;
+  var victimSide = killerSide === 'blue' ? 'red' : 'blue';
+  attributeKillEvent(killerSide, victimSide);
   var swing = rand(1.5, 4.0);
   _ms.adv = clamp(_ms.adv + (killerSide === 'blue' ? swing : -swing), 10, 90);
   pushEv('kill', text, sceneName, Object.assign({ killBlue: killerSide === 'blue' }, opts || {}));
@@ -583,6 +616,9 @@ function doRoot(side, label, sceneName) {
 function doTeamfight(winnerSide, bKills, rKills, text, sceneName) {
   _ms.blue.kills += bKills;
   _ms.red.kills  += rKills;
+  // Attribute kills: bKills = blue killed red players, rKills = red killed blue players
+  for (var i = 0; i < bKills; i++) attributeKillEvent('blue', 'red');
+  for (var j = 0; j < rKills; j++) attributeKillEvent('red', 'blue');
   var swing = rand(3, 7);
   _ms.adv = clamp(_ms.adv + (winnerSide === 'blue' ? swing : -swing), 10, 90);
   pushEv('teamfight', text, sceneName, { tfBlueKills: bKills, tfRedKills: rKills });
@@ -1066,6 +1102,20 @@ function simulateMatch(blueTeamArr, redTeamArr, blueName, redName) {
   runGrowth();
   runBloom();
 
+  var buildPlayerStats = function(sideArr, perf, draftPicks) {
+    return sideArr.map(function(pl, i) {
+      var champion = draftPicks && draftPicks[i] ? draftPicks[i].champion : '???';
+      return {
+        name:      pl ? pl.name     : '?',
+        pos:       POSITIONS[i],
+        champion:  champion,
+        kills:     perf[i].kills,
+        deaths:    perf[i].deaths,
+        assists:   perf[i].assists,
+      };
+    });
+  };
+
   return {
     winner:        _ms.winner,
     events:        _ev,
@@ -1080,5 +1130,9 @@ function simulateMatch(blueTeamArr, redTeamArr, blueName, redName) {
     goldSnapshots: _ms.goldSnapshots,
     blueGoldFinal: _ms.blue.gold,
     redGoldFinal:  _ms.red.gold,
+    playerStats: {
+      blue: buildPlayerStats(_ms.blue.players, _ms.blue.perf, draft ? draft.blue : null),
+      red:  buildPlayerStats(_ms.red.players,  _ms.red.perf,  draft ? draft.red  : null),
+    },
   };
 }

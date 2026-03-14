@@ -256,6 +256,19 @@ function _updateMatchScore(bK, rK, bShr, rShr, bRt, rRt, adv) {
   if (fill) fill.style.width = `${adv ?? 50}%`;
 }
 
+function _buildKDATable(players, color) {
+  const POS_ICON = { vanguard:'⚔️', ranger:'🌲', arcanist:'✨', hunter:'🏹', warden:'🛡️' };
+  const rows = players.map(p => `
+    <tr>
+      <td style="color:${color};font-size:11px;padding:2px 6px 2px 0">${POS_ICON[p.pos]||''} ${_escHtml(p.name)}</td>
+      <td style="font-size:11px;color:#aaa;padding:2px 6px 2px 0">${_escHtml(p.champion)}</td>
+      <td style="font-size:12px;font-weight:600;padding:2px 4px;white-space:nowrap">
+        <span style="color:#e8e8e8">${p.kills}</span>/<span style="color:#ff7b7b">${p.deaths}</span>/<span style="color:#4fc3f7">${p.assists}</span>
+      </td>
+    </tr>`).join('');
+  return `<table style="border-collapse:collapse">${rows}</table>`;
+}
+
 function _showMatchResult(result) {
   if (!result || !_matchContext) return;
   const { blueName, redName, blueId } = _matchContext;
@@ -265,6 +278,22 @@ function _showMatchResult(result) {
 
   const el = document.getElementById('pbp-results');
   if (!el) return;
+
+  const hasPlayerStats = result.playerStats &&
+    result.playerStats.blue && result.playerStats.blue.length;
+
+  const kdaSection = hasPlayerStats ? `
+    <div style="display:flex;gap:16px;margin-top:10px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:11px;color:#4fc3f7;font-weight:600;margin-bottom:4px">${_escHtml(blueName)}</div>
+        ${_buildKDATable(result.playerStats.blue, '#4fc3f7')}
+      </div>
+      <div>
+        <div style="font-size:11px;color:#ff7b7b;font-weight:600;margin-bottom:4px">${_escHtml(redName)}</div>
+        ${_buildKDATable(result.playerStats.red, '#ff7b7b')}
+      </div>
+    </div>` : '';
+
   el.style.display = '';
   el.innerHTML = `
     <div class="pbp-result-banner ${humanWon ? 'win' : 'loss'}">
@@ -287,6 +316,7 @@ function _showMatchResult(result) {
           · 🌳${result.redRoots}
         </div>
         <div style="font-size:12px;color:var(--text-dim)">⏱ ${result.duration} min</div>
+        ${kdaSection}
       </div>
     </div>
     <div style="margin-top:14px">
