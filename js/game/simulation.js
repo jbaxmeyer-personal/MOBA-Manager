@@ -187,6 +187,13 @@ const CONTEST_WEIGHTS = {
   },
 };
 
+// Morale modifier: morale 1–10, neutral at 7. Range: -1.5 to +0.75 power points.
+// Low morale makes players underperform; high morale gives a small edge.
+function moraleMod(player) {
+  if (!player || player.morale === undefined) return 0;
+  return (player.morale - 7) * 0.25;
+}
+
 function calcContestPower(player, contestType) {
   if (!player || !player.stats) return 10;
   var weights = CONTEST_WEIGHTS[contestType];
@@ -198,7 +205,7 @@ function calcContestPower(player, contestType) {
     total += (stats[stat] || 10) * w;
     totalWeight += w;
   });
-  return total / totalWeight;
+  return total / totalWeight + moraleMod(player);
 }
 
 function calcRolePower(player) {
@@ -211,7 +218,7 @@ function calcRolePower(player) {
     total += (stats[stat] || 10) * w;
     totalWeight += w;
   });
-  return total / totalWeight;
+  return total / totalWeight + moraleMod(player);
 }
 
 function teamContestPower(team, contestType, bonus) {
@@ -448,9 +455,6 @@ function quickSimulate(blueTeamArr, redTeamArr) {
 
 var _ms = null; // live match state
 var _ev = null; // event list
-
-// Position order must match POS_IDX = { vanguard:0, ranger:1, arcanist:2, hunter:3, warden:4 }
-var POSITIONS = ['vanguard', 'ranger', 'arcanist', 'hunter', 'warden'];
 
 // Kill probability by position — who is most likely to get the kill credit
 // hunter and arcanist are primary damage dealers; warden almost never takes kills

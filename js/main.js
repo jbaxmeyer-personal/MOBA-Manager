@@ -151,6 +151,42 @@ function _applyMatchResult() {
     `${winner.name} defeat ${loser.name} in Week ${wk}. (${_matchResult.blueKills}–${_matchResult.redKills} kills, ${_matchResult.duration} min)`,
     'match'
   );
+
+  // Update morale and form for all players in this match
+  _applyPostMatchMorale(blueId, 'blue', blueWon);
+  _applyPostMatchMorale(redId,  'red',  !blueWon);
+}
+
+// Update morale and rolling form for each player after a match.
+// Win/loss sets the base; individual KDA adjusts further.
+function _applyPostMatchMorale(teamId, side, won) {
+  const baseMorale = won ? 1 : -1;
+  const baseForm   = won ? 7 : 4;
+  const ps = _matchResult.playerStats && _matchResult.playerStats[side];
+  const team = G.teams[teamId];
+  if (!team) return;
+
+  POSITIONS.forEach((pos, i) => {
+    const pid = team.roster[pos];
+    if (!pid) return;
+    const player = G.players[pid];
+    if (!player) return;
+
+    const perf = ps ? ps[i] : null;
+    let delta = baseMorale;
+    let formVal = baseForm;
+
+    if (perf) {
+      // Outstanding: high kills or many assists
+      if (perf.kills >= 3 || perf.assists >= 6) { delta++; formVal++; }
+      // Poor: multiple deaths with no kills
+      if (perf.deaths >= 3 && perf.kills === 0) { delta--; formVal--; }
+    }
+
+    player.morale = Math.min(10, Math.max(1, player.morale + delta));
+    // Rolling 3-match form: push new, keep last 3
+    player.form = [...player.form.slice(-2), Math.min(10, Math.max(1, formVal))];
+  });
 }
 
 // ─── Gold Chart ───────────────────────────────────────────────────────────────
