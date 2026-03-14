@@ -376,7 +376,7 @@ function tfOpenLine(side, winMargin) {
   return tagline(side,'arcanist') + pick(templates).replace('$', ultStr);
 }
 
-// ─── SECTION 6: Position-Aware Draft ─────────────────────────────────────────
+// ─── SECTION 6: Draft System (Phase 5A + 5B) ─────────────────────────────────
 
 var ROLE_CLASS_PRIORITY = {
   vanguard:  ['Tank', 'Fighter'],
@@ -386,47 +386,156 @@ var ROLE_CLASS_PRIORITY = {
   warden:    ['Sentinel'],
 };
 
-function draftChampions(blueTeamArr, redTeamArr) {
-  var allPicked = {};
+// When opponent is building this compType, prefer picking these compTypes to counter
+var COMP_COUNTERS = {
+  ENGAGE:    ['POKE', 'SCALING'],    // poke kites; scaling survives and scales past engagers
+  POKE:      ['ENGAGE', 'ASSASSIN'], // all-in over poke; assassins dive the backline
+  ASSASSIN:  ['ENGAGE', 'PROTECT'],  // engage lockdown stops picks; protect shields carry
+  PROTECT:   ['SPLITPUSH', 'POKE'],  // can't protect a split lane; poke through shields
+  SPLITPUSH: ['ENGAGE', 'SCALING'],  // win teamfight while they split
+  SCALING:   ['ASSASSIN', 'ENGAGE'], // kill the scaling carry early before they come online
+};
 
-  var draftSide = function(team) {
-    return POSITIONS.map(function(pos, i) {
-      var player = team[i];
-      if (!player) return { pos: pos, player: null, champion: '???' };
+// Each class is weak against these classes in direct matchups (countered_by perspective)
+var COUNTERED_BY = {
+  Tank:      ['Marksman'],           // sustained ranged DPS melts tanks
+  Fighter:   ['Mage'],               // kite and burst shuts down brawlers
+  Mage:      ['Assassin'],           // burst before mages can cast
+  Marksman:  ['Assassin', 'Tank'],   // burst before they act; tanks wall them off
+  Assassin:  ['Tank', 'Sentinel'],   // tanks absorb burst; sentinels shield the target
+  Sentinel:  ['Assassin', 'Mage'],   // hard to sustain through pure burst/poke
+};
 
-      var pool     = player.champions || [];
-      var priority = ROLE_CLASS_PRIORITY[pos] || [];
+// Score a champion for ban consideration: how threatening is it on the enemy team?
+function champBanValue(champName, player) {
+  if (!player || !CHAMPIONS[champName]) return 0;
+  var champ   = CHAMPIONS[champName];
+  var pos     = player.position;
+  var prefs   = ROLE_CLASS_PRIORITY[pos] || [];
+  var base    = calcRolePower(player);
+  var roleFit = (champ.role === pos) ? 1.6
+              : (prefs.indexOf(champ.class) !== -1) ? 1.3 : 0.8;
+  return base * roleFit;
+}
 
-      var prioritized = pool.filter(function(c) {
-        var champ = CHAMPIONS[c];
-        return champ && priority.indexOf(champ.class) !== -1 && !allPicked[c];
-      });
-      var others = pool.filter(function(c) {
-        var champ = CHAMPIONS[c];
-        return champ && priority.indexOf(champ.class) === -1 && !allPicked[c];
-      });
-      var sorted = prioritized.concat(others);
-
-      var champion = '???';
-      if (sorted.length > 0) {
-        // Weighted: first 3 choices are 3x more likely
-        var weights = sorted.map(function(_, idx) { return idx < 3 ? 3 : 1; });
-        var total   = weights.reduce(function(s, w) { return s + w; }, 0);
-        var r = Math.random() * total;
-        for (var k = 0; k < sorted.length; k++) {
-          r -= weights[k];
-          if (r <= 0) { champion = sorted[k]; break; }
-        }
-        if (champion === '???') champion = sorted[0];
-        allPicked[champion] = true;
-      }
-
-      return { pos: pos, player: player, champion: champion };
+// Return top numBans champion names from targetTeam's pools (ranked by threat)
+function generateBans(targetTeam, numBans) {
+  var candidates = [];
+  targetTeam.forEach(function(player) {
+    if (!player) return;
+    (player.champions || []).forEach(function(champName) {
+      candidates.push({ champion: champName, score: champBanValue(champName, player) });
     });
-  };
+  });
+  candidates.sort(function(a, b) { return b.score - a.score; });
+  var seen = {}, bans = [];
+  candidates.forEach(function(c) {
+    if (!seen[c.champion] && bans.length < numBans) {
+      seen[c.champion] = true;
+      bans.push(c.champion);
+    }
+  });
+  return bans;
+}
 
-  var bluePicks = draftSide(blueTeamArr);
-  var redPicks  = draftSide(redTeamArr);
+// Get the leading comp type seen so far in a picks list (needs ≥ 2 to register)
+function getDominantCompType(picks) {
+  var counts = {};
+  picks.forEach(function(p) {
+    if (!p || p.champion === '???') return;
+    var ch = CHAMPIONS[p.champion];
+    if (!ch) return;
+    counts[ch.compType] = (counts[ch.compType] || 0) + 1;
+  });
+  var best = null, bestCount = 1;
+  Object.keys(counts).forEach(function(k) {
+    if (counts[k] > bestCount) { best = k; bestCount = counts[k]; }
+  });
+  return best;
+}
+
+// Calculate net counter power advantage for blue (positive = blue has the edge)
+// Scaled by 0.25 so counters influence but don't override raw skill gap
+function getCounterScore(bluePicks, redPicks) {
+  var score = 0;
+  var redClasses  = redPicks.map(function(p) {
+    return p && CHAMPIONS[p.champion] ? CHAMPIONS[p.champion].class : null;
+  }).filter(Boolean);
+  var blueClasses = bluePicks.map(function(p) {
+    return p && CHAMPIONS[p.champion] ? CHAMPIONS[p.champion].class : null;
+  }).filter(Boolean);
+  // For each red champ countered by a blue class → +1.5 for blue
+  redClasses.forEach(function(rc) {
+    (COUNTERED_BY[rc] || []).forEach(function(counterClass) {
+      if (blueClasses.indexOf(counterClass) !== -1) score += 1.5;
+    });
+  });
+  // For each blue champ countered by a red class → -1.5 for blue
+  blueClasses.forEach(function(bc) {
+    (COUNTERED_BY[bc] || []).forEach(function(counterClass) {
+      if (redClasses.indexOf(counterClass) !== -1) score -= 1.5;
+    });
+  });
+  return score * 0.25; // scale: max ~±1.9 power offset
+}
+
+// Pick the best available champion for a player, counter-aware
+function pickChampion(player, pos, banned, allPicked, enemyPicks) {
+  if (!player) return '???';
+  var pool         = player.champions || [];
+  var priority     = ROLE_CLASS_PRIORITY[pos] || [];
+  var enemyDom     = getDominantCompType(enemyPicks);
+  var counterTypes = enemyDom ? (COMP_COUNTERS[enemyDom] || []) : [];
+
+  var available = pool.filter(function(c) {
+    return !banned[c] && !allPicked[c] && CHAMPIONS[c];
+  });
+  if (!available.length) return '???';
+
+  var scored = available.map(function(c) {
+    var champ = CHAMPIONS[c];
+    var w = 1;
+    if (priority.indexOf(champ.class) !== -1) w += 2; // role class fit
+    if (champ.role === pos) w += 1;                    // exact role match
+    if (counterTypes.indexOf(champ.compType) !== -1) w += 2; // counter-pick bonus
+    w += Math.random() * 0.5;                          // variance to avoid repetitive drafts
+    return { c: c, w: w };
+  });
+  scored.sort(function(a, b) { return b.w - a.w; });
+
+  // Weighted pick among top 3 to keep variety
+  var top   = scored.slice(0, Math.min(3, scored.length));
+  var total = top.reduce(function(s, x) { return s + x.w; }, 0);
+  var r     = Math.random() * total;
+  for (var i = 0; i < top.length; i++) {
+    r -= top[i].w;
+    if (r <= 0) return top[i].c;
+  }
+  return top[0].c;
+}
+
+function draftChampions(blueTeamArr, redTeamArr) {
+  // ── Phase 1: Bans (5 per side, each bans from opponent's pool) ──────────────
+  var blueBans = generateBans(redTeamArr,  5); // blue bans opponent (red) champs
+  var redBans  = generateBans(blueTeamArr, 5); // red bans opponent (blue) champs
+  var banned   = {};
+  blueBans.concat(redBans).forEach(function(c) { banned[c] = true; });
+
+  // ── Phase 2: Picks — interleaved by position, counter-aware ─────────────────
+  // Blue picks first at each slot, then red counter-picks with full knowledge.
+  var allPicked = {}, bluePicks = [], redPicks = [];
+
+  POSITIONS.forEach(function(pos, i) {
+    var bc = pickChampion(blueTeamArr[i], pos, banned, allPicked, redPicks);
+    if (bc !== '???') allPicked[bc] = true;
+    var bClass = bc !== '???' && CHAMPIONS[bc] ? CHAMPIONS[bc].class : null;
+    bluePicks.push({ pos: pos, player: blueTeamArr[i], champion: bc, champClass: bClass });
+
+    var rc = pickChampion(redTeamArr[i], pos, banned, allPicked, bluePicks);
+    if (rc !== '???') allPicked[rc] = true;
+    var rClass = rc !== '???' && CHAMPIONS[rc] ? CHAMPIONS[rc].class : null;
+    redPicks.push({ pos: pos, player: redTeamArr[i], champion: rc, champClass: rClass });
+  });
 
   var synFor = function(picks) {
     var type = getCompType(picks.map(function(p) { return { champion: p.champion }; }));
@@ -434,10 +543,12 @@ function draftChampions(blueTeamArr, redTeamArr) {
   };
 
   return {
-    blue: bluePicks,
-    red:  redPicks,
+    blue:          bluePicks,
+    red:           redPicks,
+    bans:          { blue: blueBans, red: redBans },
     blueSynergies: synFor(bluePicks),
     redSynergies:  synFor(redPicks),
+    counterScore:  getCounterScore(bluePicks, redPicks),
   };
 }
 
@@ -1081,17 +1192,17 @@ function simulateMatch(blueTeamArr, redTeamArr, blueName, redName) {
     if (redTeamId  && G.teams[redTeamId])  redStyle  = G.teams[redTeamId].tactics.playstyle  || 'engage';
   }
 
-  // Pre-determine match winner using full role power + playstyle bonus
+  // Build draft first — counter score feeds into win probability
+  var draft = draftChampions(blueTeamArr, redTeamArr);
+
+  // Pre-determine match winner: role power + playstyle bonus + draft counter edge
   var bPow = blueTeamArr.reduce(function(s,pl) { return s + (pl ? calcRolePower(pl) : 10); }, 0);
   var rPow = redTeamArr.reduce(function(s,pl)  { return s + (pl ? calcRolePower(pl) : 10); }, 0);
   var bStyleBonus = Object.values(PLAYSTYLE_MODS[blueStyle] && PLAYSTYLE_MODS[blueStyle].bonus || {}).reduce(function(s,v){ return s+v; }, 0) * 0.15;
   var rStyleBonus = Object.values(PLAYSTYLE_MODS[redStyle]  && PLAYSTYLE_MODS[redStyle].bonus  || {}).reduce(function(s,v){ return s+v; }, 0) * 0.15;
-  var diff        = (bPow + bStyleBonus) - (rPow + rStyleBonus);
+  var diff        = (bPow + bStyleBonus) - (rPow + rStyleBonus) + draft.counterScore;
   var bWinChance  = clamp(50 + diff * 1.8, 12, 88);
   var blueWins    = chance(bWinChance);
-
-  // Build draft
-  var draft = draftChampions(blueTeamArr, redTeamArr);
 
   // Initialise match state
   initMatchState(blueTeamArr, redTeamArr, blueName, redName, blueStyle, redStyle);
