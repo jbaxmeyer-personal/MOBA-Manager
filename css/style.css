@@ -1381,6 +1381,13 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
   border-radius: 4px; color: var(--gold); cursor: pointer;
 }
 .btn-renew:hover { background: rgba(200,155,60,.3); }
+.cmod-hint { font-size: 11px; color: var(--text-dim); margin: 3px 0; }
+.transfer-section-header {
+  font-size: 12px; font-weight: 700; color: var(--gold);
+  text-transform: uppercase; letter-spacing: .5px;
+  padding: 6px 0; border-bottom: 1px solid var(--border); margin-bottom: 10px;
+}
+.transfer-empty { color: var(--text-dim); font-size: 13px; padding: 10px 0; }
 
 @media (max-width: 900px) {
   .dashboard-grid     { grid-template-columns: 1fr; }

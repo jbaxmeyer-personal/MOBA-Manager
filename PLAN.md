@@ -17,7 +17,7 @@
 | ~~Phase 12A — Scouting Depth~~ | ✅ DONE |
 | ~~Phase 12B — AI Manager Behaviour~~ | ✅ DONE |
 | ~~Phase 12C — Contract Negotiations~~ | ✅ DONE |
-| Phase 12D — Transfer Market | Transfer fees, CPU team transactions, transfer listing, loans |
+| ~~Phase 12D — Transfer Market~~ | ✅ DONE |
 | Phase 12E — Fan Events Cooldown UX | 8-week event calendar timeline in Fans panel |
 | Phase 12F — Team Housing | New facility tier (Apartment → Gaming House) with morale/chemistry/FES bonuses |
 | Balance & Polish (Phase 8) | Meta system, UI polish, playtesting — not started |
@@ -1102,7 +1102,7 @@ weeklyMarketRate = marketValue / 52
 
 ---
 
-### 12D — Transfer Market
+### 12D — Transfer Market ✅ DONE
 
 **Problem:** Between seasons, rosters feel static. CPU teams don't move players around.
 

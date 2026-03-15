@@ -935,6 +935,9 @@ function advanceWeek() {
   // Advance facility build queues
   advanceFacilityBuilds(G.humanTeamId);
 
+  // CPU transfer listing maintenance
+  if (season.week % 2 === 0) updateCpuTransferListing();
+
   // Process scouting (multi-slot)
   if (G.scouting) {
     // Normalize old single-scout format
@@ -1435,6 +1438,81 @@ function _checkFanMilestones(teamId) {
   if (!fm.m500k && fans >= 500000)  { fm.m500k = true; addNews('Milestone: 500K fans! Top sponsors are watching.', 'info'); t.morale = Math.min(10, (t.morale || 7) + 0.5); }
   if (!fm.m1m   && fans >= 1000000) { fm.m1m   = true; addNews('Milestone: 1 MILLION fans! Regional celebrity status.', 'info'); }
   if (!fm.m2m   && fans >= 2000000) { fm.m2m   = true; addNews('Milestone: 2 MILLION fans! National celebrity status!', 'info'); }
+}
+
+// ─── Transfer Market ─────────────────────────────────────────────────────────
+
+function calcTransferFee(playerId) {
+  const p = G.players[playerId];
+  if (!p) return 0;
+  const ovr    = calcOverall(p);
+  const salary = p.contract?.salary || 50000;
+  const years  = p.contract?.yearsLeft || 1;
+  return Math.round(ovr * 3000 + years * salary * 26);
+}
+
+// CPU teams periodically list players with bad morale or expiring contracts
+function updateCpuTransferListing() {
+  Object.values(G.teams).forEach(t => {
+    if (t.id === G.humanTeamId) return;
+    POSITIONS.forEach(pos => {
+      const pid = t.roster[pos];
+      if (!pid) return;
+      const p = G.players[pid];
+      if (!p) return;
+      if ((p.morale < 4 || p.contract.yearsLeft <= 0) && !p.onTransferList) {
+        p.onTransferList = true;
+      }
+    });
+  });
+}
+
+function listPlayerForTransfer(playerId) {
+  const p = G.players[playerId];
+  if (!p || p.teamId !== G.humanTeamId) return 'error';
+  p.onTransferList = true;
+  return 'ok';
+}
+
+function unlistPlayerFromTransfer(playerId) {
+  const p = G.players[playerId];
+  if (!p || p.teamId !== G.humanTeamId) return 'error';
+  p.onTransferList = false;
+  return 'ok';
+}
+
+// Buy a player from a CPU team via transfer fee
+function buyPlayerFromTeam(playerId, offeredFee, salary, years) {
+  if (!G) return 'error';
+  const p = G.players[playerId];
+  if (!p) return 'error';
+  const team = G.teams[G.humanTeamId];
+  const sellerTeam = G.teams[p.teamId];
+  if (!sellerTeam || p.teamId === G.humanTeamId) return 'error';
+
+  const calculatedFee = calcTransferFee(playerId);
+  if (offeredFee < calculatedFee * 0.80) return 'rejected'; // too low
+
+  const totalCost = offeredFee; // salary comes after
+  if (team.budget < totalCost) return 'no_budget';
+
+  team.budget -= offeredFee;
+  sellerTeam.budget += offeredFee;
+
+  // Remove from seller roster
+  POSITIONS.forEach(pos => {
+    if (sellerTeam.roster[pos] === playerId) sellerTeam.roster[pos] = null;
+  });
+
+  // Set contract and team for buyer
+  p.teamId = G.humanTeamId;
+  p.contract = { salary, yearsLeft: years, expiryYear: G.season.year + years };
+  p.onTransferList = false;
+  if (!team.roster[p.position]) team.roster[p.position] = playerId;
+  team.weeklyWages = calcWagesBill(G.humanTeamId);
+
+  addNews(`${sellerTeam.name} has accepted a bid for ${p.name}. Transfer fee: ${fmtMoneySafe(offeredFee)}.`, 'info');
+  return 'ok';
 }
 
 // ─── Contract Negotiations ───────────────────────────────────────────────────

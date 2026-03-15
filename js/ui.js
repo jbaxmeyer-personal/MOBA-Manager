@@ -333,6 +333,13 @@ function renderPlayerProfile(playerId) {
         </div>
         <div style="font-size:11px;color:var(--text-dim);margin-top:4px">${persDesc}</div>
         <div class="champ-pills">${champPills}</div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          ${p.contract.yearsLeft<=1 ? `<button class="btn-sm btn-renew" onclick="onOfferRenewal('${p.id}')">Renew Contract</button>` : ''}
+          ${p.teamId===G.humanTeamId ? (p.onTransferList
+            ? `<button class="btn-sm btn-secondary" onclick="onUnlistPlayer('${p.id}');renderPlayerProfile('${p.id}')">Unlist from Transfer</button>`
+            : `<button class="btn-sm btn-secondary" onclick="onListPlayer('${p.id}');renderPlayerProfile('${p.id}')">List for Transfer</button>`)
+            : ''}
+        </div>
       </div>
       <div style="text-align:right">
         <div class="profile-ovr" style="color:${attrColor(Math.round(ovr/99*20))}">${ovr}</div>
@@ -421,14 +428,73 @@ function renderTransfers(tab = 'free-agents') {
       </table>
     `);
   } else {
-    // Listed for transfer (players with onTransferList flag)
-    const listed = Object.values(G.players).filter(p =>
+    // Listed tab: your players + CPU transfer-listed players
+    const yourListed = Object.values(G.players).filter(p =>
       p.teamId === G.humanTeamId && p.onTransferList
     );
-    setHtml('transfers-content', listed.length
-      ? `<p style="color:var(--text-dim);font-size:13px">Players listed for transfer appear here.</p>`
-      : '<div class="coming-soon"><div class="cs-icon">💼</div><div class="cs-title">No listed players</div><div class="cs-desc">You have not listed any players for transfer.</div></div>'
+    const cpuListed = Object.values(G.players).filter(p =>
+      p.teamId && p.teamId !== G.humanTeamId && p.onTransferList
     );
+
+    let html = '';
+
+    // ─ Your listed players ─
+    html += `<div class="transfer-section-header">Your Listed Players</div>`;
+    if (yourListed.length) {
+      const rows = yourListed.map(p => {
+        const ovr = calcOverall(p);
+        const fee = calcTransferFee(p.id);
+        return `<tr class="transfer-row">
+          <td><span class="pos-badge pos-${p.position}">${posLabel(p.position)}</span></td>
+          <td style="font-weight:600;color:var(--text-hi)">${_escHtml(p.name)}</td>
+          <td><span class="overall-badge ${overallColor(ovr)}">${ovr}</span></td>
+          <td style="color:var(--text-dim)">${p.age}</td>
+          <td style="color:var(--gold)">${fmtMoney(fee)}</td>
+          <td><button class="btn-secondary btn-sm" onclick="onUnlistPlayer('${p.id}')">Unlist</button></td>
+        </tr>`;
+      }).join('');
+      html += `<table class="transfer-table" style="margin-bottom:20px">
+        <thead><tr><th>Pos</th><th>Player</th><th>OVR</th><th>Age</th><th>Asking Fee</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    } else {
+      html += `<p class="transfer-empty">No players listed. Use the Squad screen to list players.</p>`;
+    }
+
+    // ─ CPU transfer market ─
+    html += `<div class="transfer-section-header" style="margin-top:8px">Transfer Market</div>`;
+    if (cpuListed.length) {
+      const rows = cpuListed.map(p => {
+        const ovr = calcOverall(p);
+        const fee = calcTransferFee(p.id);
+        const teamName = G.teams[p.teamId]?.name || '?';
+        const canAfford = team.budget >= fee;
+        return `<tr class="transfer-row">
+          <td><span class="pos-badge pos-${p.position}">${posLabel(p.position)}</span></td>
+          <td style="font-weight:600;color:var(--text-hi)">${_escHtml(p.name)}</td>
+          <td><span class="overall-badge ${overallColor(ovr)}">${ovr}</span></td>
+          <td style="color:var(--text-dim)">${p.age}</td>
+          <td style="color:var(--text-dim)">${_escHtml(teamName)}</td>
+          <td style="color:var(--gold)">${fmtMoney(fee)}</td>
+          <td>${personalityBadge(p.personality||'pro')}</td>
+          <td><button class="btn-primary btn-sm" onclick="showTransferBuyModal('${p.id}')" ${canAfford?'':'disabled'}>Bid</button></td>
+        </tr>`;
+      }).join('');
+      html += `<table class="transfer-table">
+        <thead><tr><th>Pos</th><th>Player</th><th>OVR</th><th>Age</th><th>Team</th><th>Fee</th><th></th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    } else {
+      html += `<p class="transfer-empty">No players listed by other teams this week.</p>`;
+    }
+
+    setHtml('transfers-content', `
+      <p style="color:var(--text-dim);font-size:12px;margin-bottom:14px">
+        Budget: <strong style="color:var(--gold)">${fmtMoney(team.budget)}</strong>
+        &nbsp;·&nbsp; Wage bill: ${fmtMoney(team.weeklyWages)}/wk
+      </p>
+      ${html}
+    `);
   }
 }
 
@@ -625,6 +691,95 @@ function onContractModalBgClick(e) {
 
 function onOfferRenewal(playerId) {
   showContractModal(playerId, true);
+}
+
+function onUnlistPlayer(playerId) {
+  unlistPlayerFromTransfer(playerId);
+  renderTransfers('listed');
+}
+
+function onListPlayer(playerId) {
+  listPlayerForTransfer(playerId);
+  renderTransfers('listed');
+  showMain('transfers');
+}
+
+function showTransferBuyModal(playerId) {
+  if (!G) return;
+  const p = G.players[playerId];
+  if (!p) return;
+  const ovr = calcOverall(p);
+  const fee = calcTransferFee(playerId);
+  const marketVal = calcMarketValue(playerId);
+  const suggested = Math.round(marketVal * 0.9 / 1000) * 1000;
+  const sellerName = G.teams[p.teamId]?.name || '?';
+
+  _contractNeg = { playerId, isRenewal: false, lastOffer: null, isBuy: true };
+
+  setHtml('contract-modal-box', `
+    <div class="cmod-header">
+      <div class="cmod-player">
+        <span class="cmod-pos pos-badge pos-${p.position}">${posLabel(p.position)}</span>
+        <span class="cmod-name">${_escHtml(p.name)}</span>
+        <span class="ovr-badge ${overallColor(ovr)}">${ovr}</span>
+        ${personalityBadge(p.personality || 'pro')}
+      </div>
+      <button class="cmod-close" onclick="onCloseContractModal()">✕</button>
+    </div>
+    <div class="cmod-market">
+      At <strong>${_escHtml(sellerName)}</strong> &nbsp;·&nbsp;
+      Calculated fee: <strong style="color:var(--gold)">${fmtMoney(fee)}</strong> &nbsp;·&nbsp;
+      Age ${p.age} · ${p.contract.yearsLeft}yr left
+    </div>
+    <div id="cmod-body">
+      <div class="cmod-form">
+        <label class="cmod-label">Transfer fee bid</label>
+        <input id="cmod-fee" class="cmod-input" type="number" min="${Math.round(fee*0.8)}" step="10000" value="${fee}" />
+        <p class="cmod-hint">Minimum accepted: ${fmtMoney(Math.round(fee * 0.8))}</p>
+        <label class="cmod-label" style="margin-top:10px">Contract salary offer</label>
+        <input id="cmod-salary" class="cmod-input" type="number" min="10000" step="5000" value="${suggested}" />
+        <label class="cmod-label" style="margin-top:10px">Contract length</label>
+        <div class="cmod-years">
+          ${[1,2,3].map(y => `<button class="cmod-yr-btn${y===1?' active':''}" onclick="onSelectContractYears(${y},this)">${y} yr</button>`).join('')}
+        </div>
+        <input id="cmod-years" type="hidden" value="1" />
+        <button class="btn-primary cmod-offer-btn" onclick="onSubmitTransferBid()">Submit Bid</button>
+      </div>
+    </div>
+  `);
+  document.getElementById('contract-modal-overlay').style.display = 'flex';
+}
+
+function onSubmitTransferBid() {
+  if (!_contractNeg) return;
+  const fee    = parseInt(document.getElementById('cmod-fee').value) || 0;
+  const salary = parseInt(document.getElementById('cmod-salary').value) || 50000;
+  const years  = parseInt(document.getElementById('cmod-years').value) || 1;
+
+  const result = buyPlayerFromTeam(_contractNeg.playerId, fee, salary, years);
+  const p = G.players[_contractNeg.playerId];
+  let bodyHtml = '';
+
+  if (result === 'ok') {
+    bodyHtml = `<div class="cmod-response cmod-accept">
+      <span class="cmod-resp-icon">✅</span>
+      <span>Transfer completed! <strong>${_escHtml(p.name)}</strong> has joined your squad.</span>
+    </div>
+    <div class="cmod-actions"><button class="btn-primary" onclick="onCloseContractModal();renderSquad('starters');renderTransfers('listed');renderTopBar()">Continue</button></div>`;
+  } else if (result === 'rejected') {
+    bodyHtml = `<div class="cmod-response cmod-reject">
+      <span class="cmod-resp-icon">❌</span>
+      <span>Bid rejected. The team wants at least ${fmtMoney(Math.round(calcTransferFee(_contractNeg.playerId)*0.8))}.</span>
+    </div>
+    <div class="cmod-actions"><button class="btn-secondary" onclick="onCloseContractModal()">Close</button></div>`;
+  } else if (result === 'no_budget') {
+    bodyHtml = `<div class="cmod-response cmod-reject">
+      <span class="cmod-resp-icon">❌</span><span>Insufficient budget for this transfer fee.</span>
+    </div>
+    <div class="cmod-actions"><button class="btn-secondary" onclick="onCloseContractModal()">Close</button></div>`;
+  }
+
+  setHtml('cmod-body', bodyHtml);
 }
 
 // ─── Training ────────────────────────────────────────────────────────────────
