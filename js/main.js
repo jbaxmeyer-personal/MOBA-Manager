@@ -152,6 +152,12 @@ function _applyMatchResult() {
     'match'
   );
 
+  // Fan reaction to result
+  if (typeof _applyFanChange === 'function') {
+    _applyFanChange(blueId, blueWon);
+    _applyFanChange(redId,  !blueWon);
+  }
+
   // Update morale and form for all players in this match
   _applyPostMatchMorale(blueId, 'blue', blueWon);
   _applyPostMatchMorale(redId,  'red',  !blueWon);

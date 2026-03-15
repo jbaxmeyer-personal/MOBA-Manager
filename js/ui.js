@@ -72,6 +72,7 @@ function showMain(name) {
     case 'squad':      renderSquad('starters'); break;
     case 'tactics':    renderTactics(); break;
     case 'transfers':  renderTransfers('free-agents'); break;
+    case 'training':   renderTraining(); break;
     case 'finances':   renderFinances(); break;
     case 'league':     renderLeague(); break;
     case 'schedule':   renderSchedule(); break;
@@ -387,6 +388,65 @@ function signFreeAgent(playerId) {
   renderTopBar();
 }
 
+// ─── Training ────────────────────────────────────────────────────────────────
+
+function setTraining(choice) {
+  if (!G) return;
+  G.weeklyTraining = choice;
+  renderTraining();
+}
+
+function renderTraining() {
+  if (!G) return;
+  const current = G.weeklyTraining || 'rest';
+  const team    = G.teams[G.humanTeamId];
+  const choices = Object.entries(TRAINING_DEFS);
+
+  const playerRows = POSITIONS.map(pos => {
+    const pid = team.roster[pos];
+    const p   = pid ? G.players[pid] : null;
+    if (!p) return '';
+    const ovr = calcOverall(p);
+    const formAvg = p.form.length ? Math.round(p.form.reduce((a,b)=>a+b,0)/p.form.length) : 5;
+    const moraleColor = p.morale >= 7 ? '#4caf50' : p.morale >= 4 ? '#c89b3c' : '#f44336';
+    return `<tr>
+      <td style="color:var(--text-dim);font-size:11px">${posLabel(pos)}</td>
+      <td>${_escHtml(p.name)}</td>
+      <td><span class="ovr-badge ${overallColor(ovr)}">${ovr}</span></td>
+      <td>Age ${p.age}</td>
+      <td style="color:${moraleColor}">♥ ${p.morale.toFixed(1)}</td>
+      <td style="color:var(--text-dim)">${formAvg}/10 form</td>
+    </tr>`;
+  }).join('');
+
+  const btnRows = choices.map(([key, def]) => {
+    const active = key === current;
+    return `<div class="training-option ${active ? 'training-active' : ''}" onclick="setTraining('${key}')">
+      <span class="training-icon">${def.icon}</span>
+      <div class="training-info">
+        <div class="training-label">${def.label}</div>
+        <div class="training-desc">${def.desc}</div>
+      </div>
+      ${active ? '<span class="training-check">✓ Selected</span>' : ''}
+    </div>`;
+  }).join('');
+
+  setHtml('training-content', `
+    <div class="training-layout">
+      <div class="training-choices">
+        <h3 style="margin-bottom:10px;color:var(--text-dim);font-size:13px">THIS WEEK'S FOCUS</h3>
+        ${btnRows}
+      </div>
+      <div class="training-squad">
+        <h3 style="margin-bottom:10px;color:var(--text-dim);font-size:13px">SQUAD CONDITION</h3>
+        <table class="squad-table" style="width:100%">
+          <tbody>${playerRows}</tbody>
+        </table>
+      </div>
+    </div>
+  `);
+}
+
 // ─── Finances ────────────────────────────────────────────────────────────────
 
 function renderFinances() {
@@ -402,7 +462,7 @@ function renderFinances() {
         <div class="finance-row"><span class="fr-label">Budget</span><span class="fr-val fr-gold">${fmtMoney(team.budget)}</span></div>
         <div class="finance-row"><span class="fr-label">Sponsor income/wk</span><span class="fr-val fr-pos">+${fmtMoney(team.sponsorIncome)}</span></div>
         <div class="finance-row"><span class="fr-label">Wage bill/wk</span><span class="fr-val fr-neg">-${fmtMoney(team.weeklyWages)}</span></div>
-        <div class="finance-row"><span class="fr-label">Net/week</span><span class="fr-val ${net >= 0 ? 'fr-pos' : 'fr-neg'}">${net >= 0 ? '+':''}{${fmtMoney(net)}}</span></div>
+        <div class="finance-row"><span class="fr-label">Net/week</span><span class="fr-val ${net >= 0 ? 'fr-pos' : 'fr-neg'}">${net >= 0 ? '+' : ''}${fmtMoney(net)}</span></div>
         <div class="finance-row"><span class="fr-label">Projected (${weeksLeft}wk)</span><span class="fr-val ${net*weeksLeft >= 0 ? 'fr-pos':'fr-neg'}">${fmtMoney(team.budget + net * weeksLeft)}</span></div>
       </div>
       <div class="finance-card">
@@ -417,6 +477,31 @@ function renderFinances() {
         }).join('')}
       </div>
     </div>
+    ${(G.financeLog && G.financeLog.length > 0) ? `
+    <div class="finance-card" style="margin-top:14px">
+      <h3>Transaction History</h3>
+      <table class="squad-table" style="width:100%">
+        <thead><tr>
+          <th style="text-align:left;color:var(--text-dim);font-size:11px;padding:4px 6px">Week</th>
+          <th style="text-align:right;color:var(--text-dim);font-size:11px;padding:4px 6px">Income</th>
+          <th style="text-align:right;color:var(--text-dim);font-size:11px;padding:4px 6px">Wages</th>
+          <th style="text-align:right;color:var(--text-dim);font-size:11px;padding:4px 6px">Net</th>
+          <th style="text-align:right;color:var(--text-dim);font-size:11px;padding:4px 6px">Balance</th>
+        </tr></thead>
+        <tbody>
+          ${G.financeLog.slice().reverse().map(e => {
+            const rowNet = e.income - e.wages;
+            return `<tr>
+              <td style="padding:5px 6px;font-size:12px;color:var(--text-dim)">Wk ${e.week}</td>
+              <td style="padding:5px 6px;font-size:12px;text-align:right;color:var(--win)">+${fmtMoney(e.income)}</td>
+              <td style="padding:5px 6px;font-size:12px;text-align:right;color:var(--loss)">-${fmtMoney(e.wages)}</td>
+              <td style="padding:5px 6px;font-size:12px;text-align:right;color:${rowNet >= 0 ? 'var(--win)' : 'var(--loss)'}">${rowNet >= 0 ? '+':''}${fmtMoney(rowNet)}</td>
+              <td style="padding:5px 6px;font-size:12px;text-align:right;color:var(--gold);font-weight:600">${fmtMoney(e.balance)}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
   `);
 }
 

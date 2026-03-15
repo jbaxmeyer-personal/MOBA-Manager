@@ -91,8 +91,11 @@ function initGame(humanTeamId) {
     freeAgents: PLAYER_DB.filter(p => !p.teamId).map(p => p.id),
     season,
     stats,
-    news:   [],
+    news:           [],
     selectedPlayerId: null,
+    weeklyTraining: 'rest',    // human's training choice for the current week
+    trainingLog:    [],        // [{ week, teamId, choice }]
+    financeLog:     [],        // [{ week, wages, income, net, balance }]
   };
 
   addNews(`Welcome to Grove Manager! You are now the manager of ${teams[humanTeamId].name}. Good luck!`, 'info');
@@ -182,12 +185,38 @@ function advanceWeek() {
   const matchWeek = getWeekMatches(week);
   const humanMatch = matchWeek.find(m => m.homeId === G.humanTeamId || m.awayId === G.humanTeamId);
 
-  // Simulate all AI vs AI matches first
+  // Simulate all AI vs AI matches
   matchWeek.forEach(m => {
     if (!m.played && !(m.homeId === G.humanTeamId || m.awayId === G.humanTeamId)) {
       simulateAIMatch(m);
     }
   });
+
+  // Weekly finances: wages out, sponsor income in (all teams)
+  Object.values(G.teams).forEach(t => {
+    const wages  = t.weeklyWages;
+    const income = t.sponsorIncome;
+    t.budget = (t.budget || 0) - wages + income;
+    if (t.id === G.humanTeamId) {
+      G.financeLog.push({
+        week, wages, income, net: income - wages, balance: t.budget,
+      });
+      if (t.budget < 0)
+        addNews(`Financial warning: budget is ${fmtMoneySafe(t.budget)}. Consider releasing high earners.`, 'alert');
+    }
+  });
+
+  // Fan changes based on results this week
+  matchWeek.filter(m => m.played && m.result).forEach(m => {
+    _applyFanChange(m.homeId, m.result.winnerId === m.homeId);
+    _applyFanChange(m.awayId, m.result.winnerId === m.awayId);
+  });
+
+  // Process training for human team
+  processTraining(G.humanTeamId, G.weeklyTraining || 'rest');
+
+  // Player development tick (every week, minor)
+  processPlayerDevelopment();
 
   // Advance week counter
   season.week++;
@@ -198,7 +227,131 @@ function advanceWeek() {
     addNews('The regular season is over! The top 4 teams advance to the playoffs.', 'info');
   }
 
+  // Reset weekly training choice
+  G.weeklyTraining = 'rest';
+
   return { type: 'week_advanced', week, humanMatch };
+}
+
+// ─── Fan change from match result ────────────────────────────────────────────
+
+function _applyFanChange(teamId, won) {
+  const t = G.teams[teamId];
+  if (!t) return;
+  const pct = won
+    ? 0.02 + Math.random() * 0.02   // +2–4%
+    : -(0.005 + Math.random() * 0.005); // −0.5–1%
+  t.fans = Math.round(t.fans * (1 + pct));
+}
+
+// ─── Training system ──────────────────────────────────────────────────────────
+// Choices: rest | scrimmage | soloqueue | filmstudy | streaming
+
+const TRAINING_DEFS = {
+  rest: {
+    label: 'Rest',
+    icon: '😴',
+    desc: 'Players recover. Morale +1 for all. No attribute gains.',
+    effect(players) {
+      players.forEach(p => { if (p) p.morale = Math.min(10, p.morale + 1); });
+    },
+  },
+  scrimmage: {
+    label: 'Scrimmage',
+    icon: '⚔️',
+    desc: 'Internal practice match. Small chance to improve a combat stat for each player.',
+    effect(players) {
+      const combatStats = ['mechanics','teamfightPositioning','mapMovement'];
+      players.forEach(p => {
+        if (!p) return;
+        const moraleBonus = p.morale > 7 ? 1.5 : p.morale < 4 ? 0.5 : 1;
+        if (Math.random() < 0.18 * moraleBonus) {
+          const stat = combatStats[Math.floor(Math.random()*combatStats.length)];
+          p.stats[stat] = Math.min(20, p.stats[stat] + 1);
+        }
+      });
+    },
+  },
+  soloqueue: {
+    label: 'Solo Queue',
+    icon: '🎮',
+    desc: 'Individual ranked grind. One player gains +1 to Mechanics or Decision Making.',
+    effect(players) {
+      const eligible = players.filter(p => p && p.age < 27);
+      if (!eligible.length) return;
+      const p = eligible[Math.floor(Math.random()*eligible.length)];
+      const stat = Math.random() < 0.6 ? 'mechanics' : 'decisionMaking';
+      const moraleBonus = p.morale > 7 ? 1.5 : 1;
+      if (Math.random() < 0.35 * moraleBonus)
+        p.stats[stat] = Math.min(20, p.stats[stat] + 1);
+    },
+  },
+  filmstudy: {
+    label: 'Film Study',
+    icon: '📹',
+    desc: 'Review opponent footage. Small boost to Game Sense and Adaptability for all.',
+    effect(players) {
+      players.forEach(p => {
+        if (!p) return;
+        if (Math.random() < 0.15) p.stats.gameSense      = Math.min(20, p.stats.gameSense + 1);
+        if (Math.random() < 0.12) p.stats.adaptability   = Math.min(20, p.stats.adaptability + 1);
+      });
+    },
+  },
+  streaming: {
+    label: 'Streaming',
+    icon: '📡',
+    desc: 'Players stream online. Fans +1.5%, morale +0.5 each.',
+    effect(players, teamId) {
+      const t = G.teams[teamId];
+      if (t) t.fans = Math.round(t.fans * 1.015);
+      players.forEach(p => {
+        if (p) p.morale = Math.min(10, p.morale + 0.5);
+      });
+    },
+  },
+};
+
+function processTraining(teamId, choice) {
+  const def = TRAINING_DEFS[choice] || TRAINING_DEFS.rest;
+  const team = G.teams[teamId];
+  if (!team) return;
+  const players = POSITIONS.map(pos => {
+    const pid = team.roster[pos];
+    return pid ? G.players[pid] : null;
+  });
+  def.effect(players, teamId);
+
+  // Record in finance log
+  if (!G.trainingLog) G.trainingLog = [];
+  G.trainingLog.push({ week: G.season.week, teamId, choice });
+}
+
+// ─── Player development ───────────────────────────────────────────────────────
+
+function processPlayerDevelopment() {
+  Object.values(G.players).forEach(p => {
+    if (!p) return;
+    const moraleBonus = p.morale > 7 ? 1.5 : p.morale < 4 ? 0.5 : 1;
+
+    // Young players (<22): chance to improve
+    if (p.age < 22) {
+      const allStats = Object.keys(p.stats);
+      if (Math.random() < 0.08 * moraleBonus) {
+        const stat = allStats[Math.floor(Math.random()*allStats.length)];
+        p.stats[stat] = Math.min(20, p.stats[stat] + 1);
+      }
+    }
+
+    // Veterans (>28): slight chance to decline
+    if (p.age > 28) {
+      const allStats = Object.keys(p.stats);
+      if (Math.random() < 0.04) {
+        const stat = allStats[Math.floor(Math.random()*allStats.length)];
+        p.stats[stat] = Math.max(1, p.stats[stat] - 1);
+      }
+    }
+  });
 }
 
 function getWeekMatches(week) {
@@ -254,6 +407,15 @@ function getStandings() {
 function addNews(text, type = 'info') {
   G.news.unshift({ text, type, week: G.season.week, timestamp: Date.now() });
   if (G.news.length > 50) G.news.pop();
+}
+
+// ─── Internal format helpers ──────────────────────────────────────────────────
+
+function fmtMoneySafe(n) {
+  const abs = Math.abs(n || 0), sign = n < 0 ? '-' : '';
+  if (abs >= 1e6) return `${sign}$${(abs/1e6).toFixed(1)}M`;
+  if (abs >= 1e3) return `${sign}$${Math.round(abs/1e3)}K`;
+  return `${sign}$${abs}`;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

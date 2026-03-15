@@ -9,13 +9,15 @@
 | Layer | Status | Notes |
 |---|---|---|
 | FM Shell (HTML/CSS/UI) | ✅ Done | Full TAG shell — Phase 2 complete |
-| Sim Engine | ✅ Done | Stat-driven FM engine complete — Phase 4 done |
-| Data Layer | ✅ Done | 30 TAG champs, 8 VL teams, 45 players — Phase 1 complete |
-| Map Visualization | ⚠️ Placeholder | Current LoL-style SVG; hex map rewrite is Phase 3 |
-| Draft System | ✅ Done | Smart ban/pick + class counters + UI — Phase 5 done |
+| Sim Engine | ✅ Done | **Real tick-based agent engine** — live positions, real HP, XP, items, abilities. Phase 6E2 |
+| Data Layer | ✅ Done | 30 champs + full abilities, 23 items, 45 players, career stats, G.stats — Phase 6E1 |
+| Map Visualization | ✅ Done | SVG map reads live simulation positions from events. Phase 6E4 |
+| Playback Controls | ✅ Done | ⏸ 1×/2×/4×/8× speed + pause/resume. Phase 6E3 |
+| Draft System | ✅ Done | Smart ban/pick + class counters + UI — Phase 5 |
+| Finances / Fans | ⚠️ Partial | Display only — weekly processing not wired yet |
+| Training System | ❌ Not started | Weekly choices → attribute growth |
+| Player Development | ❌ Not started | Young players grow, veterans decline |
 | Series Format | ❌ Not started | Currently single-game; BO3/BO5 is Phase 7 |
-| Management Depth | ❌ Not started | Training, personality, transfers, finances, fans — Phase 6 |
-| Career Structure | ⚠️ Partial | 1 region, 7-week Spring split, no playoffs — Phase 7 |
 | Save / Load | ❌ Not started | localStorage — Phase 7 |
 
 **TAG = The Ancient Grove** (our custom MOBA)
@@ -25,12 +27,13 @@
 ## Roadmap Overview
 
 ```
-Phase 1 → Data Layer Pivot       (replace all LoL data with TAG data)           ✅ DONE
-Phase 2 → FM Shell Completion    (finish the UI using TAG data)                  ✅ DONE
+Phase 1 → Data Layer Pivot       (replace all LoL data with TAG data)                    ✅ DONE
+Phase 2 → FM Shell Completion    (finish the UI using TAG data)                           ✅ DONE
 Phase 3 → Hex Map                (replace LoL map with TAG hex map)
-Phase 4 → Sim Engine Rewrite     (rebuild around TAG mechanics)          ✅ DONE
-Phase 5 → Draft System           (TAG champion select + synergies)        ✅ DONE
-Phase 6 → Management Depth       (training, personality, transfers, finances, fans)
+Phase 4 → Sim Engine Rewrite     (rebuild around TAG mechanics)                   ✅ DONE
+Phase 5 → Draft System           (TAG champion select + synergies)                ✅ DONE
+Phase 6E → Engine Rewrite v2     (REAL agent simulation — positions, HP, items)  ✅ DONE
+Phase 6 → Management Depth       (training, development, finances, fans)          ⚠️ IN PROGRESS
 Phase 7 → Career Structure       (BO3/BO5 series, full playoffs, multi-season, save/load)
 Phase 8 → Balance & Polish       (meta system, UI polish, playtesting)
 ```
@@ -554,3 +557,4 @@ GAME_DESIGN.md        — Management game design (update to remove LoL refs)
 | 2026-03-14 | #1 | Researched TFM2, designed TAG MOBA, wrote PLAN.md + THE_ANCIENT_GROVE.md |
 | 2026-03-14 | #2 | **Phase 1 complete** — champions.js (30 TAG champs), teams.js (8 VL teams), players.js (45 players), state.js (POSITIONS/names/weeks updated). Validated: all positions covered, all champion refs valid, overall range 43–85. |
 | 2026-03-14 | #3 | **Phase 2 complete** — Full FM shell. index.html (titles/SVG/score labels updated), css/style.css (FM layout appended), js/ui.js (all render fns: dashboard, squad, player profile, tactics, transfers, finances, league, schedule, draft), js/main.js (game loop: team select, advance week, play/skip match, PBP, return from match), js/game/simulation.js (TAG Phase 2 sim engine), js/ui/map.js (position names updated to TAG). Full game loop playable: intro → team select → dashboard → advance week → play match → PBP → result → back to dashboard. |
+| 2026-03-14 | #4 | **Phases 4E+5+6E complete** — Phase 4D–4E (per-player KDA, morale modifier), Phase 5A–5D (smart draft, bans UI, counter flags, double-draft fix), Phase 6E1 (champions.js full rewrite 30 champs + abilities, items.js 23 items, players.js updated pools, state.js career+G.stats), Phase 6E2 (simulation.js full agent-based rewrite — live positions, real HP, XP/leveling, items purchasing, phys/magic damage, vamp, ranger AI, game phases), Phase 6E3 (playback speed controls ⏸/1×/2×/4×/8×), Phase 6E4 (map.js reads real simulation positions). |
