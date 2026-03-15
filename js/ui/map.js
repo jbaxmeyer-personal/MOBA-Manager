@@ -108,15 +108,15 @@
     let cx, cy, color;
 
     if (ev.wardenBlue !== undefined || ev.wardenRed !== undefined) {
-      // Warden positions from OBJ_DEFS: warden_b(72,162) warden_r(228,138)
-      cx = ev.wardenBlue ? 72 : 228; cy = ev.wardenBlue ? 162 : 138; color = '#9b59b6';
+      // Warden positions from OBJ_DEFS: warden_b(80,80) warden_r(220,220)
+      cx = ev.wardenBlue ? 80 : 220; cy = ev.wardenBlue ? 80 : 220; color = '#9b59b6';
     } else if (ev.shrineBlue !== undefined || ev.shrineRed !== undefined) {
-      // Shrine positions: shrine_a(120,130) shrine_b(180,170) — use midpoint
-      cx = 150; cy = 150; color = '#c89b3c';
+      // Shrine positions: shrine_a(80,80) shrine_b(220,220)
+      cx = ev.shrineBlue ? 80 : 220; cy = ev.shrineBlue ? 80 : 220; color = '#c89b3c';
     } else if (ev.type === 'result') {
       const blueWon = (ev.advAfter || 50) >= 50;
-      cx = blueWon ? 278 : 22;
-      cy = blueWon ? 22  : 278;
+      cx = blueWon ? 35  : 265;
+      cy = blueWon ? 265 : 35;
       color = blueWon ? '#4fc3f7' : '#ff7b7b';
     } else if (ev.type === 'teamfight' || ev.type === 'kill' || ev.type === 'objective') {
       // Flash at the centroid of all champion positions in this event
@@ -194,7 +194,7 @@
 
   function startWander() {
     stopWander();
-    _wanderInterval = setInterval(wanderTick, 820);
+    _wanderInterval = setInterval(wanderTick, 300);
   }
 
   function stopWander() {

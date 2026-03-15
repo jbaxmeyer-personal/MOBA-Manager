@@ -6,7 +6,7 @@
 
 // ─── Engine constants ─────────────────────────────────────────────────────────
 
-const TICK_S         = 3;     // in-game seconds per engine tick
+const TICK_S         = 2;     // in-game seconds per engine tick
 const MAX_TICKS      = 240;   // 12 in-game minutes
 const MOVE_SCALE     = 60;    // moveSpeed unit → px/tick = moveSpeed * TICK_S / MOVE_SCALE
 const STR_DMG_REDUCE = 0.22;  // fraction of damage champions deal to structures
@@ -42,18 +42,18 @@ const SPAWN = {
 // Where each role walks during the laning phase
 const LANE_POS = {
   blue: {
-    vanguard: { x:140, y:160 },
-    ranger:   { x: 90, y:195 },
-    arcanist: { x:155, y:155 },
-    hunter:   { x:150, y:200 },
-    warden:   { x:145, y:205 },
+    vanguard: { x: 45,  y: 200 },
+    ranger:   { x: 80,  y: 210 },
+    arcanist: { x:120,  y: 190 },
+    hunter:   { x:130,  y: 252 },
+    warden:   { x:115,  y: 255 },
   },
   red: {
-    vanguard: { x:160, y:140 },
-    ranger:   { x:210, y:105 },
-    arcanist: { x:145, y:145 },
-    hunter:   { x:150, y:100 },
-    warden:   { x:155, y: 95 },
+    vanguard: { x:255, y: 100 },
+    ranger:   { x:220, y:  90 },
+    arcanist: { x:180, y: 110 },
+    hunter:   { x:170, y:  48 },
+    warden:   { x:185, y:  45 },
   },
 };
 
@@ -67,10 +67,10 @@ const OBJ_DEFS = [
   { id:'r_inner',   side:'red',     type:'root',    x:235, y: 65, maxHp: 5500, atkDmg:12, atkRange:32 },
   { id:'r_heart',   side:'red',     type:'root',    x:258, y: 40, maxHp: 7000, atkDmg:18, atkRange:32 },
   { id:'r_ancient', side:'red',     type:'ancient', x:278, y: 22, maxHp:12000, atkDmg:25, atkRange:36 },
-  { id:'shrine_a',  side:'neutral', type:'shrine',  x:120, y:130, maxHp: 2000, atkDmg: 0, atkRange: 0 },
-  { id:'shrine_b',  side:'neutral', type:'shrine',  x:180, y:170, maxHp: 2000, atkDmg: 0, atkRange: 0 },
-  { id:'warden_b',  side:'neutral', type:'warden',  x: 72, y:162, maxHp: 5000, atkDmg: 6, atkRange:28 },
-  { id:'warden_r',  side:'neutral', type:'warden',  x:228, y:138, maxHp: 5000, atkDmg: 6, atkRange:28 },
+  { id:'shrine_a',  side:'neutral', type:'shrine',  x: 80, y: 80, maxHp: 2000, atkDmg: 0, atkRange: 0 },
+  { id:'shrine_b',  side:'neutral', type:'shrine',  x:220, y:220, maxHp: 2000, atkDmg: 0, atkRange: 0 },
+  { id:'warden_b',  side:'neutral', type:'warden',  x: 80, y: 80, maxHp: 5000, atkDmg: 6, atkRange:28 },
+  { id:'warden_r',  side:'neutral', type:'warden',  x:220, y:220, maxHp: 5000, atkDmg: 6, atkRange:28 },
 ];
 
 // Jungle camps
@@ -536,6 +536,7 @@ function resolveDeaths(agents, events, score, tick) {
       advAfter: advScore(score, agents),
       positions: posMap(agents),
       killBlue: killSide === 'blue',
+      agentStats: agentStatsMap(agents),
     });
   });
 }
@@ -771,6 +772,18 @@ function simulateMatch(blueTeamArr, redTeamArr, blueName, redName, preDraft) {
     // Gold chart
     goldSnapshots.push({ lead: totalGold(all,'blue') - totalGold(all,'red'), time: tick });
 
+    // Move event every tick (lightweight, no text)
+    events.push({
+      tick, type: 'move',
+      time: fmtTime(tick),
+      positions: posMap(all),
+      blueKills: score.blueKills, redKills: score.redKills,
+      blueShrines: score.blueShrines, redShrines: score.redShrines,
+      blueRoots: score.blueRoots, redRoots: score.redRoots,
+      advAfter: advScore(score, all),
+      agentStats: agentStatsMap(all),
+    });
+
     // Commentary every 18 ticks
     if (tick > 0 && tick % 18 === 0 && !score.winner) {
       events.push({
@@ -812,6 +825,7 @@ function simulateMatch(blueTeamArr, redTeamArr, blueName, redName, preDraft) {
     blueRoots:score.blueRoots, redRoots:score.redRoots,
     advAfter: score.winner === 'blue' ? 80 : 20,
     positions: posMap(all),
+    agentStats: agentStatsMap(all),
   });
 
   // Build KDA table data
@@ -880,6 +894,22 @@ function quickSimulateMatch(homePlayers, awayPlayers) {
   const awayScore = awayPlayers.reduce((s,p) => s + (p ? calcOverall(p) : 50), 0);
   const diff      = homeScore - awayScore;
   return Math.random() * 100 < Math.min(85, Math.max(15, 50 + diff * 0.5)) ? 'blue' : 'red';
+}
+
+// ─── Agent stats snapshot helper ─────────────────────────────────────────────
+
+function agentStatsMap(agents) {
+  const m = { blue: {}, red: {} };
+  agents.forEach(ag => {
+    m[ag.side][ag.pos] = {
+      kills:   ag.kills  || 0,
+      deaths:  ag.deaths || 0,
+      assists: ag.assists || 0,
+      gold:    Math.round(ag.gold || 0),
+      isDead:  !!ag.isDead,
+    };
+  });
+  return m;
 }
 
 // ─── Draft system ─────────────────────────────────────────────────────────────

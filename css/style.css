@@ -546,6 +546,7 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
   gap: 12px;
   align-items: flex-start;
   margin-top: 6px;
+  min-height: 300px;
 }
 .pbp-map-col {
   flex: 0 0 auto;
@@ -553,6 +554,19 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
   flex-direction: column;
   align-items: center;
   gap: 5px;
+}
+.pbp-map-wrap {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+.pbp-feed-wrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 .pbp-map-svg {
   width: 260px;
@@ -1140,3 +1154,69 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
   .sidebar            { width: 42px; }
   .nav-item           { font-size: 0; padding: 10px; }
 }
+
+/* ─── Role Assignment ──────────────────────────────────────────────────────── */
+.role-assignment-phase {
+  padding: 20px; max-width: 860px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.ra-title { font-size: 17px; font-weight: 700; color: var(--gold); }
+.ra-subtitle { font-size: 12px; color: var(--text-dim); }
+.ra-layout { display: flex; gap: 24px; flex-wrap: wrap; min-height: 220px; }
+.ra-bench { flex: 1; min-width: 240px; }
+.ra-bench-label { font-size: 11px; color: var(--text-dim); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+.ra-bench-cards { display: flex; flex-wrap: wrap; gap: 8px; }
+.ra-champ-card {
+  background: var(--panel2); border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 7px 12px; cursor: pointer;
+  transition: border-color .15s, transform .1s;
+}
+.ra-champ-card:hover { border-color: var(--gold-dim); transform: translateY(-1px); }
+.ra-champ-card.ra-selected {
+  border-color: var(--gold); background: rgba(255,198,41,0.08);
+  box-shadow: 0 0 8px rgba(255,198,41,0.2);
+}
+.ra-champ-name { font-size: 13px; font-weight: 600; color: var(--text-hi); margin-bottom: 3px; }
+.ra-slots { display: flex; flex-direction: column; gap: 8px; min-width: 240px; }
+.ra-slot {
+  background: var(--panel2); border: 1px dashed var(--border2);
+  border-radius: var(--radius); padding: 10px 14px; cursor: pointer;
+  display: flex; align-items: center; gap: 10px;
+  transition: border-color .15s, background .15s;
+}
+.ra-slot:hover { border-color: var(--gold-dim); background: rgba(255,198,41,0.04); }
+.ra-slot.ra-slot-filled { border-style: solid; border-color: var(--border2); }
+.ra-slot-icon { font-size: 16px; width: 22px; text-align: center; }
+.ra-slot-label { font-size: 11px; color: var(--text-dim); min-width: 64px; }
+.ra-slot-champ { font-size: 13px; font-weight: 600; color: var(--text-hi); flex: 1; }
+.ra-slot-hint { font-size: 11px; color: var(--text-dim); font-style: italic; flex: 1; }
+.ra-unassign { font-size: 11px; color: var(--text-dim); cursor: pointer; padding: 2px 6px; }
+.ra-unassign:hover { color: var(--loss); }
+.ra-actions { display: flex; gap: 12px; padding-top: 8px; }
+
+/* ─── Live Stats Panel ─────────────────────────────────────────────────────── */
+.pbp-live-stats {
+  width: 190px; min-width: 170px; flex-shrink: 0;
+  background: var(--panel); border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border); overflow-y: auto;
+  font-size: 11px;
+}
+.lsp-header {
+  font-size: 10px; font-weight: 700; letter-spacing: 1px;
+  padding: 5px 8px; text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+.lsp-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 8px; border-bottom: 1px solid var(--border);
+  transition: opacity .3s;
+}
+.lsp-row.lsp-dead { opacity: 0.35; }
+.lsp-pos { font-size: 13px; width: 18px; flex-shrink: 0; }
+.lsp-info { flex: 1; min-width: 0; }
+.lsp-name { font-weight: 600; color: var(--text-hi); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lsp-champ { color: var(--text-dim); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lsp-right { text-align: right; flex-shrink: 0; }
+.lsp-kda { font-size: 11px; white-space: nowrap; }
+.lsp-gold { color: var(--gold); font-size: 10px; }
+.lsp-divider { height: 1px; background: var(--border2); margin: 4px 0; }

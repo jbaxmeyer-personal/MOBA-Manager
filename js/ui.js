@@ -759,14 +759,13 @@ function renderInteractiveDraft(availChamps) {
   if (!done && seq) {
     const isHuman   = seq.side === humanSide;
     const teamLabel = seq.side === 'blue' ? blueName : redName;
-    const posName   = seq.type === 'pick' ? posLabel(POSITIONS[seq.posIdx]) : '';
-    const action    = seq.type === 'ban' ? 'Ban a Champion' : `Pick for ${posName}`;
+    const action    = seq.type === 'ban' ? 'Ban a Champion' : 'Pick a Champion';
     turnHtml = `<div class="draft-turn-indicator ${isHuman ? 'turn-yours' : 'turn-cpu'}">
       ${isHuman ? '▶ YOUR TURN —' : `${_escHtml(teamLabel)} —`} ${action}
       ${!isHuman ? '<span class="turn-thinking">thinking…</span>' : ''}
     </div>`;
   } else if (done) {
-    turnHtml = `<div class="draft-turn-indicator turn-done">✓ Draft Complete — Ready to play</div>`;
+    turnHtml = `<div class="draft-turn-indicator turn-done">✓ Draft Complete — Assign roles</div>`;
   }
 
   // ── Ban slots ──────────────────────────────────────────────────────────────
@@ -782,24 +781,27 @@ function renderInteractiveDraft(availChamps) {
   </div>`;
 
   // ── Pick board ─────────────────────────────────────────────────────────────
-  const pickSlot = (pickArr, posIdx, side) => {
-    const pick = pickArr[posIdx];
-    const pos  = POSITIONS[posIdx];
-    const isCurrent = !done && seq && seq.type === 'pick' && seq.side === side && seq.posIdx === posIdx;
-    return `<div class="draft-pick ${isCurrent ? 'pick-current' : ''} ${!pick ? 'pick-empty' : ''}">
-      <span class="pick-pos">${posIcon(pos)}</span>
-      <span class="pick-player">${pick ? _escHtml(pick.player?.name || '—') : posLabel(pos)}</span>
-      ${pick ? `<span class="pick-champ">${_escHtml(pick.champion)}</span>${classBadge(pick.champClass)}` : ''}
+  // Picks are now strings (champion names), ordered by draft sequence (indices 0-4)
+  const pickSlot = (pickArr, idx, side) => {
+    const pick = pickArr[idx];  // pick is a string (champion name) or undefined
+    const isCurrent = !done && seq && seq.type === 'pick' && seq.side === side
+      && (side === 'blue' ? ds.bluePicks.length : ds.redPicks.length) === idx;
+    const champName = typeof pick === 'string' ? pick : pick?.champion;
+    const champClass = typeof pick === 'string' ? (CHAMPIONS[pick]?.class || '') : (pick?.champClass || '');
+    return `<div class="draft-pick ${isCurrent ? 'pick-current' : ''} ${!champName ? 'pick-empty' : ''}">
+      <span class="pick-pos">${idx + 1}</span>
+      <span class="pick-player">${champName ? _escHtml(champName) : '—'}</span>
+      ${champName ? `<span class="pick-champ">${classBadge(champClass)}</span>` : ''}
     </div>`;
   };
 
   const blueCol = `<div class="draft-col">
     <div class="draft-col-label blue-text">${_escHtml(blueName)}</div>
-    ${POSITIONS.map((_,i) => pickSlot(bluePicks, i, 'blue')).join('')}
+    ${[0,1,2,3,4].map(i => pickSlot(bluePicks, i, 'blue')).join('')}
   </div>`;
   const redCol  = `<div class="draft-col">
     <div class="draft-col-label red-text">${_escHtml(redName)}</div>
-    ${POSITIONS.map((_,i) => pickSlot(redPicks, i, 'red')).join('')}
+    ${[0,1,2,3,4].map(i => pickSlot(redPicks, i, 'red')).join('')}
   </div>`;
 
   setHtml('draft-bans',  bansHtml + turnHtml);
@@ -813,7 +815,7 @@ function renderInteractiveDraft(availChamps) {
     const isBan  = seq && seq.type === 'ban';
     const cards  = availChamps.map(champName => {
       const cd = CHAMPIONS[champName];
-      const b  = cd ? CLASS_BADGE[cd.class.toLowerCase()] : null;
+      const b  = cd ? CLASS_BADGE[(cd.class || '').toLowerCase()] : null;
       return `<div class="draft-champ-card" onclick="applyDraftAction('${champName.replace(/'/g,"\\'")}')">
         <div class="dcc-name">${_escHtml(champName)}</div>
         ${b ? `<span class="class-badge" style="color:${b.color};border-color:${b.color}">${b.label}</span>` : ''}
@@ -821,12 +823,101 @@ function renderInteractiveDraft(availChamps) {
     }).join('');
     pickerEl.style.display = 'block';
     pickerEl.innerHTML = `
-      <div class="draft-picker-label">${isBan ? '🚫 Choose a Champion to BAN' : `✓ Pick for ${posLabel(POSITIONS[seq.posIdx])}`}</div>
+      <div class="draft-picker-label">${isBan ? '🚫 Choose a Champion to BAN' : '✓ Pick a Champion'}</div>
       <div class="draft-champ-grid">${cards}</div>`;
   } else {
     pickerEl.style.display = 'none';
     pickerEl.innerHTML = '';
   }
+}
+
+function renderRoleAssignment(picks) {
+  const ds = _draftState;
+  if (!ds) return;
+  const assigned = ds.humanAssignment || {};
+  const assignedChamps = new Set(Object.values(assigned));
+  const bench = picks.filter(c => !assignedChamps.has(c));
+
+  const benchHtml = `
+    <div class="ra-bench-label">Your Picks — click a champion, then click a role</div>
+    <div class="ra-bench-cards">
+      ${bench.map(c => {
+        const cd = CHAMPIONS[c] || {};
+        const sel = ds.raSelectedChamp === c;
+        return `<div class="ra-champ-card ${sel ? 'ra-selected' : ''}" onclick="raSelectChamp('${c.replace(/'/g,"\\'")}')">
+          <div class="ra-champ-name">${_escHtml(c)}</div>
+          ${classBadge(cd.class)}
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  const slotsHtml = POSITIONS.map(pos => {
+    const champ = assigned[pos];
+    const cd = champ ? (CHAMPIONS[champ] || {}) : null;
+    const filled = !!champ;
+    return `<div class="ra-slot ${filled ? 'ra-slot-filled' : 'ra-slot-empty'}" onclick="raAssignToSlot('${pos}')">
+      <span class="ra-slot-icon">${posIcon(pos)}</span>
+      <span class="ra-slot-label">${posLabel(pos)}</span>
+      ${filled
+        ? `<span class="ra-slot-champ">${_escHtml(champ)}</span>${classBadge(cd.class)}<span class="ra-unassign" onclick="event.stopPropagation();raAssignToSlot('${pos}')">✕</span>`
+        : `<span class="ra-slot-hint">— assign —</span>`}
+    </div>`;
+  }).join('');
+
+  const allFilled = POSITIONS.every(p => assigned[p]);
+
+  setHtml('ra-bench', benchHtml);
+  setHtml('ra-slots', slotsHtml);
+  const actEl = document.getElementById('ra-actions');
+  if (actEl) actEl.style.display = allFilled ? 'flex' : 'none';
+}
+
+function initLiveStats(draft, blueName, redName) {
+  const blue = document.getElementById('lsp-blue-label');
+  const red  = document.getElementById('lsp-red-label');
+  if (blue) blue.textContent = blueName;
+  if (red)  red.textContent  = redName;
+
+  const makeRows = (side, picks) => {
+    return (picks || []).map((p, i) => {
+      const champName  = typeof p === 'string' ? p : (p.champion || '');
+      const playerName = typeof p === 'string' ? '' : (p.player?.name || '');
+      const pos = typeof p === 'string' ? POSITIONS[i] : (p.pos || POSITIONS[i]);
+      return `<div class="lsp-row" id="lsp-${side[0]}-${pos || i}">
+        <span class="lsp-pos">${posIcon(pos || POSITIONS[i])}</span>
+        <div class="lsp-info">
+          <div class="lsp-name">${_escHtml(playerName || champName)}</div>
+          <div class="lsp-champ">${_escHtml(champName)}</div>
+        </div>
+        <div class="lsp-right">
+          <div class="lsp-kda" id="lsp-kda-${side[0]}-${pos || i}">0/0/0</div>
+          <div class="lsp-gold" id="lsp-gold-${side[0]}-${pos || i}">0g</div>
+        </div>
+      </div>`;
+    }).join('');
+  };
+
+  const blueEl = document.getElementById('lsp-blue-rows');
+  const redEl  = document.getElementById('lsp-red-rows');
+  if (blueEl) blueEl.innerHTML = makeRows('blue', draft.blue || []);
+  if (redEl)  redEl.innerHTML  = makeRows('red',  draft.red  || []);
+}
+
+function updateLiveStats(agentStats) {
+  if (!agentStats) return;
+  ['blue','red'].forEach(side => {
+    POSITIONS.forEach(pos => {
+      const s = agentStats[side]?.[pos];
+      if (!s) return;
+      const pfx = side[0];
+      const kdaEl  = document.getElementById(`lsp-kda-${pfx}-${pos}`);
+      const goldEl = document.getElementById(`lsp-gold-${pfx}-${pos}`);
+      const rowEl  = document.getElementById(`lsp-${pfx}-${pos}`);
+      if (kdaEl)  kdaEl.innerHTML = `<span style="color:#e8e8e8">${s.kills}</span>/<span style="color:#ff7b7b">${s.deaths}</span>/<span style="color:#4fc3f7">${s.assists}</span>`;
+      if (goldEl) goldEl.textContent = s.gold + 'g';
+      if (rowEl)  rowEl.classList.toggle('lsp-dead', !!s.isDead);
+    });
+  });
 }
 
 function renderDraftSynergies(draft) {

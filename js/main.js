@@ -10,20 +10,20 @@ let _seriesState    = null;
 // { match, blueId, redId, blueName, redName, format, neededToWin, blueWins, redWins, games, humanSide }
 
 const DRAFT_SEQUENCE = [
-  { side:'blue', type:'ban',  posIdx:null },
-  { side:'red',  type:'ban',  posIdx:null },
-  { side:'blue', type:'ban',  posIdx:null },
-  { side:'red',  type:'ban',  posIdx:null },
-  { side:'blue', type:'pick', posIdx:0 },
-  { side:'red',  type:'pick', posIdx:0 },
-  { side:'red',  type:'pick', posIdx:1 },
-  { side:'blue', type:'pick', posIdx:1 },
-  { side:'blue', type:'pick', posIdx:2 },
-  { side:'red',  type:'pick', posIdx:2 },
-  { side:'red',  type:'pick', posIdx:3 },
-  { side:'blue', type:'pick', posIdx:3 },
-  { side:'blue', type:'pick', posIdx:4 },
-  { side:'red',  type:'pick', posIdx:4 },
+  { side:'blue', type:'ban'  },
+  { side:'red',  type:'ban'  },
+  { side:'blue', type:'ban'  },
+  { side:'red',  type:'ban'  },
+  { side:'blue', type:'pick' },
+  { side:'red',  type:'pick' },
+  { side:'red',  type:'pick' },
+  { side:'blue', type:'pick' },
+  { side:'blue', type:'pick' },
+  { side:'red',  type:'pick' },
+  { side:'red',  type:'pick' },
+  { side:'blue', type:'pick' },
+  { side:'blue', type:'pick' },
+  { side:'red',  type:'pick' },
 ];
 let _draftState = null;
 
@@ -126,6 +126,7 @@ function _startSeriesGame() {
   document.getElementById('draft-actions').style.display      = 'none';
   document.getElementById('between-games-panel').style.display = 'none';
   document.getElementById('comp-synergies').innerHTML         = '';
+  document.getElementById('role-assignment-phase').style.display = 'none';
   setText('match-team-blue', ss.blueName);
   setText('match-team-red',  ss.redName);
 
@@ -134,7 +135,12 @@ function _startSeriesGame() {
     blueTeamArr: blueRoster,
     redTeamArr:  redRoster,
     bans: { blue: [], red: [] },
-    bluePicks: [], redPicks: [],
+    bluePicks: [],   // strings
+    redPicks:  [],   // strings
+    blueAssigned: null,
+    redAssigned:  null,
+    humanAssignment: {},
+    raSelectedChamp: null,
     step: 0, done: false,
   };
   renderInteractiveDraft(null);
@@ -148,10 +154,14 @@ function onStartMatch() {
   _matchResult = simulateMatch(blueRoster, redRoster, blueName, redName, draft);
 
   document.getElementById('draft-phase').style.display   = 'none';
+  document.getElementById('role-assignment-phase').style.display = 'none';
   document.getElementById('pbp-container').style.display = 'block';
   document.getElementById('pbp-results').style.display   = 'none';
   document.getElementById('pbp-events').innerHTML        = '';
 
+  if (typeof initLiveStats === 'function' && draft) {
+    initLiveStats(draft, blueName, redName);
+  }
   _updateMatchScore(0, 0, 0, 0, 0, 0, 50);
   startPBP(_matchResult.events);
 }
@@ -163,7 +173,11 @@ function onSkipMatch() {
   _matchResult = simulateMatch(blueRoster, redRoster, blueName, redName, draft);
 
   document.getElementById('draft-phase').style.display   = 'none';
+  document.getElementById('role-assignment-phase').style.display = 'none';
   document.getElementById('pbp-container').style.display = 'block';
+  if (typeof initLiveStats === 'function' && draft) {
+    initLiveStats(draft, blueName, redName);
+  }
 
   if (_pbpTimer) { clearTimeout(_pbpTimer); _pbpTimer = null; }
   if (typeof setMapSkipMode === 'function') setMapSkipMode(true);
@@ -411,7 +425,7 @@ function _drawGoldChart(snapshots) {
 
 // ─── PBP ──────────────────────────────────────────────────────────────────────
 
-const PBP_BASE_DELAY = 850; // ms per event at 1× speed
+const PBP_BASE_DELAY = 300; // ms per event at 1× speed
 let _pbpSpeedMult = 1;
 let _pbpPaused    = false;
 
@@ -455,7 +469,10 @@ function startPBP(events) {
     const ev = events[idx++];
 
     if (typeof updateMap === 'function') updateMap(ev);
-    _appendPBPEvent(ev, feedEl);
+    if (ev.type !== 'move') {
+      _appendPBPEvent(ev, feedEl);
+    }
+    if (ev.agentStats && typeof updateLiveStats === 'function') updateLiveStats(ev.agentStats);
     _updateMatchScore(
       ev.blueKills,   ev.redKills,
       ev.blueShrines, ev.redShrines,
@@ -593,8 +610,8 @@ function advanceDraft() {
       try {
         const taken = new Set([
           ..._draftState.bans.blue, ..._draftState.bans.red,
-          ..._draftState.bluePicks.map(p => p.champion),
-          ..._draftState.redPicks.map(p => p.champion),
+          ..._draftState.bluePicks,
+          ..._draftState.redPicks,
         ]);
         const c = _cpuDraftAction(stepSnapshot)
           || Object.keys(CHAMPIONS).find(k => !taken.has(k))
@@ -617,11 +634,8 @@ function applyDraftAction(champName) {
   if (seq.type === 'ban') {
     ds.bans[seq.side].push(champName);
   } else {
-    const teamArr = seq.side === 'blue' ? ds.blueTeamArr : ds.redTeamArr;
-    const player  = teamArr[seq.posIdx];
-    const entry   = { pos: POSITIONS[seq.posIdx], player, champion: champName, champClass: champData?.class || '' };
-    if (seq.side === 'blue') ds.bluePicks.push(entry);
-    else                     ds.redPicks.push(entry);
+    if (seq.side === 'blue') ds.bluePicks.push(champName);
+    else                     ds.redPicks.push(champName);
   }
 
   ds.step++;
@@ -635,30 +649,29 @@ function applyDraftAction(champName) {
 }
 
 function _draftAvailableChamps(step) {
-  const ds   = _draftState;
+  const ds = _draftState;
   const taken = new Set([
     ...ds.bans.blue, ...ds.bans.red,
-    ...ds.bluePicks.map(p => p.champion),
-    ...ds.redPicks.map(p => p.champion),
+    ...ds.bluePicks, ...ds.redPicks,
   ]);
-  const seq  = DRAFT_SEQUENCE[step];
-  if (seq.type === 'pick') {
-    const teamArr = seq.side === 'blue' ? ds.blueTeamArr : ds.redTeamArr;
-    const player  = teamArr[seq.posIdx];
-    const pool    = (player?.champions || []).filter(c => !taken.has(c));
-    if (pool.length > 0) return pool;
-    // Fallback: any available champ of appropriate class
-    return Object.keys(CHAMPIONS).filter(c => !taken.has(c)).slice(0, 8);
+  const seq = DRAFT_SEQUENCE[step];
+  if (seq.type === 'ban') {
+    return Object.keys(CHAMPIONS).filter(c => !taken.has(c));
   }
-  // Ban: all non-taken
-  return Object.keys(CHAMPIONS).filter(c => !taken.has(c));
+  // For picks: show full team pool + all champions as fallback
+  const teamArr = ds.humanSide === 'blue' ? ds.blueTeamArr : ds.redTeamArr;
+  const poolSet = new Set();
+  teamArr.forEach(p => (p?.champions || []).forEach(c => poolSet.add(c)));
+  // Add all available champs so player isn't restricted
+  Object.keys(CHAMPIONS).forEach(c => { if (!taken.has(c)) poolSet.add(c); });
+  return [...poolSet].filter(c => !taken.has(c));
 }
 
 function _cpuDraftAction(step) {
   const ds  = _draftState;
   const seq = DRAFT_SEQUENCE[step];
-  const banned   = [...ds.bans.blue, ...ds.bans.red];
-  const allPicked = [...ds.bluePicks.map(p => p.champion), ...ds.redPicks.map(p => p.champion)];
+  const banned    = [...ds.bans.blue, ...ds.bans.red];
+  const allPicked = [...ds.bluePicks, ...ds.redPicks];
   if (seq.type === 'ban') {
     const foeArr = seq.side === 'blue' ? ds.redTeamArr : ds.blueTeamArr;
     const taken  = [...banned, ...allPicked];
@@ -666,30 +679,157 @@ function _cpuDraftAction(step) {
     return bans.find(b => !taken.includes(b))
       || Object.keys(CHAMPIONS).find(c => !taken.includes(c));
   }
+  // For picks: iterate roster and pick best champion
   const teamArr  = seq.side === 'blue' ? ds.blueTeamArr : ds.redTeamArr;
-  const foePicks = (seq.side === 'blue' ? ds.redPicks : ds.bluePicks).map(p => p.champion);
-  const player   = teamArr[seq.posIdx];
-  return pickChampion(player, POSITIONS[seq.posIdx], banned, allPicked, foePicks);
+  const foePicks = seq.side === 'blue' ? ds.redPicks  : ds.bluePicks;
+
+  let bestChamp = null;
+  for (const player of teamArr) {
+    if (!player) continue;
+    const c = pickChampion(player, player.position, banned, allPicked, foePicks);
+    if (c) { bestChamp = c; break; }
+  }
+  return bestChamp || Object.keys(CHAMPIONS).find(c => !allPicked.includes(c) && !banned.includes(c));
 }
 
 function _finalizeDraft() {
   const ds = _draftState;
-  ds.done  = true;
-  const blueNames = ds.bluePicks.map(p => p.champion);
-  const redNames  = ds.redPicks.map(p => p.champion);
+  ds.done = true;
+
+  // CPU assigns its picks to roles
+  const cpuSide   = ds.humanSide === 'blue' ? 'red' : 'blue';
+  const cpuPicks  = cpuSide === 'blue' ? ds.bluePicks : ds.redPicks;
+  const cpuRoster = cpuSide === 'blue' ? ds.blueTeamArr : ds.redTeamArr;
+  const cpuAssigned = _cpuAssignRoles(cpuPicks, cpuRoster);
+  if (cpuSide === 'blue') ds.blueAssigned = cpuAssigned;
+  else                    ds.redAssigned  = cpuAssigned;
+
+  // Also auto-assign human picks by default (so draft-actions becomes available immediately)
+  const humanPicks  = ds.humanSide === 'blue' ? ds.bluePicks : ds.redPicks;
+  const humanRoster = ds.humanSide === 'blue' ? ds.blueTeamArr : ds.redTeamArr;
+  const humanAssigned = _cpuAssignRoles(humanPicks, humanRoster);
+  if (ds.humanSide === 'blue') ds.blueAssigned = humanAssigned;
+  else                         ds.redAssigned  = humanAssigned;
+
+  // Pre-populate the humanAssignment map so the UI reflects auto-assignment
+  ds.humanAssignment = {};
+  humanAssigned.forEach(entry => {
+    ds.humanAssignment[entry.pos] = entry.champion;
+  });
+
+  // Build draft immediately so match can start (draft-actions visible)
+  const blueNames = ds.blueAssigned.map(p => p.champion);
+  const redNames  = ds.redAssigned.map(p => p.champion);
   const draft = {
-    blue: ds.bluePicks,
-    red:  ds.redPicks,
+    blue: ds.blueAssigned,
+    red:  ds.redAssigned,
     bans: ds.bans,
     blueSynergies: (() => { const s = COMP_SYNERGIES[getDominantCompType(blueNames)]; return s ? [s] : []; })(),
     redSynergies:  (() => { const s = COMP_SYNERGIES[getDominantCompType(redNames)];  return s ? [s] : []; })(),
     counterScore:  getCounterScore(blueNames, redNames),
   };
   _matchContext.draft = draft;
+
   renderInteractiveDraft(null);
+  document.getElementById('draft-champ-picker').style.display = 'none';
   renderDraftSynergies(draft);
   document.getElementById('draft-actions').style.display = 'flex';
-  document.getElementById('draft-champ-picker').style.display = 'none';
+
+  // Also show role assignment screen for optional rearrangement
+  showRoleAssignmentScreen();
+}
+
+function _cpuAssignRoles(picks, rosterArr) {
+  const ROLE_CLASS_FIT = {
+    vanguard:  ['tank','fighter'],
+    ranger:    ['assassin','fighter'],
+    arcanist:  ['mage'],
+    hunter:    ['marksman'],
+    warden:    ['sentinel'],
+  };
+  const used = new Set();
+  return POSITIONS.map((pos, i) => {
+    const player = rosterArr[i];
+    let bestIdx = -1, bestScore = -1;
+    picks.forEach((champName, j) => {
+      if (used.has(j)) return;
+      const cls = (CHAMPIONS[champName]?.class || '').toLowerCase();
+      const fit = (ROLE_CLASS_FIT[pos] || []).includes(cls) ? 2 : 0;
+      const owned = player?.champions?.includes(champName) ? 1 : 0;
+      const score = fit + owned;
+      if (score > bestScore) { bestScore = score; bestIdx = j; }
+    });
+    if (bestIdx === -1) bestIdx = picks.findIndex((_, j) => !used.has(j));
+    used.add(bestIdx);
+    const champName = picks[bestIdx] || picks[0];
+    return { pos, player, champion: champName, champClass: CHAMPIONS[champName]?.class || '' };
+  });
+}
+
+function showRoleAssignmentScreen() {
+  const ds = _draftState;
+  ds.humanAssignment = {};
+  ds.raSelectedChamp = null;
+  document.getElementById('role-assignment-phase').style.display = 'block';
+  const picks = ds.humanSide === 'blue' ? ds.bluePicks : ds.redPicks;
+  renderRoleAssignment(picks);
+}
+
+function raSelectChamp(champName) {
+  _draftState.raSelectedChamp = (_draftState.raSelectedChamp === champName) ? null : champName;
+  renderRoleAssignment(_draftState.humanSide === 'blue' ? _draftState.bluePicks : _draftState.redPicks);
+}
+
+function raAssignToSlot(pos) {
+  const ds = _draftState;
+  if (!ds.raSelectedChamp) {
+    // If slot has a champ, unassign it back to bench
+    if (ds.humanAssignment[pos]) {
+      delete ds.humanAssignment[pos];
+      renderRoleAssignment(ds.humanSide === 'blue' ? ds.bluePicks : ds.redPicks);
+    }
+    return;
+  }
+  // Remove this champ from any other slot it might be in
+  Object.keys(ds.humanAssignment).forEach(p => {
+    if (ds.humanAssignment[p] === ds.raSelectedChamp) delete ds.humanAssignment[p];
+  });
+  ds.humanAssignment[pos] = ds.raSelectedChamp;
+  ds.raSelectedChamp = null;
+  renderRoleAssignment(ds.humanSide === 'blue' ? ds.bluePicks : ds.redPicks);
+}
+
+function onConfirmRoleAssignment() {
+  const ds = _draftState;
+  const humanSide = ds.humanSide;
+  const rosterArr = humanSide === 'blue' ? ds.blueTeamArr : ds.redTeamArr;
+  const humanPicks = humanSide === 'blue' ? ds.bluePicks : ds.redPicks;
+
+  const humanAssigned = POSITIONS.map((pos, i) => {
+    const champName = ds.humanAssignment[pos] || humanPicks[i];
+    const player = rosterArr.find(p => p?.champions?.includes(champName)) || rosterArr[i];
+    return { pos, player, champion: champName, champClass: CHAMPIONS[champName]?.class || '' };
+  });
+
+  if (humanSide === 'blue') ds.blueAssigned = humanAssigned;
+  else                      ds.redAssigned  = humanAssigned;
+
+  const blueNames = ds.blueAssigned.map(p => p.champion);
+  const redNames  = ds.redAssigned.map(p => p.champion);
+
+  const draft = {
+    blue: ds.blueAssigned,
+    red:  ds.redAssigned,
+    bans: ds.bans,
+    blueSynergies: (() => { const s = COMP_SYNERGIES[getDominantCompType(blueNames)]; return s ? [s] : []; })(),
+    redSynergies:  (() => { const s = COMP_SYNERGIES[getDominantCompType(redNames)];  return s ? [s] : []; })(),
+    counterScore:  getCounterScore(blueNames, redNames),
+  };
+  _matchContext.draft = draft;
+
+  document.getElementById('role-assignment-phase').style.display = 'none';
+  renderDraftSynergies(draft);
+  document.getElementById('draft-actions').style.display = 'flex';
 }
 
 // ─── DOM Ready ────────────────────────────────────────────────────────────────
