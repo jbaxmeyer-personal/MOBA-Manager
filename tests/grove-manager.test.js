@@ -250,7 +250,7 @@ async function runTests() {
   // ── NAVIGATION ─────────────────────────────────────────────────────────────
   console.log('\n── Panel Navigation ─────────────────────────────────────');
 
-  const navPanels = ['squad', 'tactics', 'training', 'finances', 'league', 'schedule', 'transfers', 'scouting'];
+  const navPanels = ['squad', 'training', 'finances', 'league', 'schedule', 'transfers', 'scouting'];
 
   for (const panel of navPanels) {
     await test(`Panel "${panel}" opens without errors`, async () => {

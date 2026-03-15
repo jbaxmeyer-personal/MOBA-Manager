@@ -53,7 +53,6 @@
       <a class="nav-item active" data-screen="dashboard" onclick="showMain('dashboard')">🏠 Dashboard</a>
       <a class="nav-item" data-screen="teaminfo"    onclick="showMain('teaminfo')">🏢 Club</a>
       <a class="nav-item" data-screen="squad"      onclick="showMain('squad')">👥 Squad</a>
-      <a class="nav-item" data-screen="tactics"    onclick="showMain('tactics')">⚔️ Tactics</a>
       <a class="nav-item" data-screen="training"   onclick="showMain('training')">🎯 Training</a>
       <a class="nav-item" data-screen="transfers"  onclick="showMain('transfers')">💼 Transfers</a>
       <a class="nav-item" data-screen="scouting"   onclick="showMain('scouting')">🔭 Scouting</a>
@@ -279,6 +278,25 @@
     </div>
     <div class="ra-actions" id="ra-actions" style="display:none">
       <button class="btn-primary" onclick="onConfirmRoleAssignment()">Confirm Lineup ▶</button>
+    </div>
+  </div>
+
+  <!-- Tactics Phase -->
+  <div id="tactics-phase" class="tactics-phase" style="display:none">
+    <div class="tp-header">
+      <div class="tp-title">Pre-Match Tactics</div>
+      <div class="tp-subtitle">Set your strategy before the match begins.</div>
+    </div>
+    <div class="tp-body">
+      <div class="tp-col" id="tp-col-left"></div>
+      <div class="tp-col" id="tp-col-mid"></div>
+      <div class="tp-col tp-col-right" id="tp-col-right"></div>
+    </div>
+    <div class="tp-desc-bar" id="tp-desc-bar">Hover a tactic option to see its description.</div>
+    <div class="tp-actions">
+      <button class="btn-secondary" onclick="onDelegateToAnalyst()">🎓 Delegate to Analyst</button>
+      <button class="btn-primary" onclick="onConfirmTactics()">Start Match ▶</button>
+      <button class="btn-text" onclick="onSkipTactics()">Skip Tactics</button>
     </div>
   </div>
 

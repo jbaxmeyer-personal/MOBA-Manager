@@ -13,6 +13,133 @@ const PLAYSTYLES = {
   scaling:   { name: 'Scaling',   desc: 'Survive early, stack Verdant Blessings, dominate late' },
 };
 
+// ─── Tactics Definitions ──────────────────────────────────────────────────────
+
+const TACTICS_DEFS = {
+  laneFocus: {
+    label: 'Core Lane Focus',
+    options: {
+      top_mid: { label: 'Focus Top/Mid',   desc: 'Jungler supports top and mid. Early objectives through top side. Good with strong top laners.', simKey: 'laneFocus_topMid' },
+      mid_bot: { label: 'Focus Mid/Bot',   desc: 'Jungler supports mid and bot. ADC gets more early gold. Strong with scaling ADC carries.', simKey: 'laneFocus_midBot' },
+      all:     { label: 'All Lanes',       desc: 'Flexible, reactive to opportunities. No lane bias. Good for read-and-react comps.', simKey: null },
+    },
+  },
+  jungleStyle: {
+    label: 'Jungle Style',
+    options: {
+      farm:    { label: 'Farm & Cover',       desc: 'Jungler prioritizes camps and defensive vision. Low early risk, solid gold income.', simKey: 'jungle_farm' },
+      shrines: { label: 'Shrine Ganking',     desc: 'Jungler focuses on contesting Ley Shrines and enabling early dives. High impact, high risk.', simKey: 'jungle_shrines' },
+      counter: { label: 'Counter-Jungling',   desc: 'Invades enemy camps to deny resources. Punishes farming junglers heavily.', simKey: 'jungle_counter' },
+    },
+  },
+  wardenCall: {
+    label: 'Early Warden Call',
+    options: {
+      always:   { label: 'Always Attempt',  desc: 'Contest Warden the moment it spawns. High reward if you win, risky if behind.', simKey: 'warden_always' },
+      flexible: { label: 'Flexible',        desc: 'Only attempt Warden if winning and in position. Balanced approach.', simKey: null },
+      concede:  { label: 'Concede',         desc: 'Skip early Warden, prioritize Root structures. Best with splitpush comps.', simKey: 'warden_concede' },
+    },
+  },
+  topJoinWarden: {
+    label: 'Top Laner joins Warden',
+    options: {
+      always:   { label: 'Always Join',     desc: 'Top laner rotates to Warden fight every time. More 5v5 teamfights around Warden.', simKey: 'topJoin_always' },
+      flexible: { label: 'Flexible',        desc: 'Join only if lane is stable. Balanced rotation.', simKey: null },
+      never:    { label: 'Do Not Join',     desc: 'Top laner keeps lane pressure. Creates 4v5 at Warden but denies side Root.', simKey: 'topJoin_never' },
+    },
+  },
+  objectiveSetup: {
+    label: 'Objective Setup',
+    options: {
+      split:    { label: 'Split Push',      desc: '1-3-1 or 2-1-2 structure. Multi-lane Root pressure. Weaker in teamfights.', simKey: 'obj_split' },
+      flexible: { label: 'Flexible',        desc: 'Read the situation. Adapt between lanes and grouping. Best with high-skill teams.', simKey: null },
+      group:    { label: 'Group Up',        desc: '5-man on every objective. Strong teamfight. Slower Root progress.', simKey: 'obj_group' },
+    },
+  },
+  combatStrategy: {
+    label: 'Combat Strategy',
+    options: {
+      poke:   { label: 'Poke / Maintain Distance', desc: 'Chip enemies before committing. Use range advantage. Punishes hard-engage comps.', simKey: 'combat_poke' },
+      engage: { label: 'Hard Engage',              desc: 'Initiate immediately. All-in teamfight. High kill rate, high risk.', simKey: 'combat_engage' },
+      bait:   { label: 'Bait & Disengage',         desc: 'Fake engages, punish overextensions. Best with mobility-heavy comps.', simKey: 'combat_bait' },
+    },
+  },
+  wardenBuff: {
+    label: 'Warden Buff Usage',
+    options: {
+      group5:  { label: 'Group as 5',    desc: 'All 5 group after Warden for a coordinated push. Strong push, predictable.', simKey: 'buff_group5' },
+      '1-4':   { label: '1-4 Split',    desc: 'One player continues split pressure while 4 group. Dual threat.', simKey: 'buff_1_4' },
+      '1-3-1': { label: '1-3-1 Split',  desc: 'Two sidelanes keep pressure while 3 group mid. Complex, high reward.', simKey: 'buff_1_3_1' },
+    },
+  },
+  ancientSiege: {
+    label: 'Ancient Siege Style',
+    options: {
+      poke: { label: 'Poke / Siege',  desc: 'Whittle Ancient\'s HP from range. Longer siege, lower risk of wipe.', simKey: 'ancient_poke' },
+      dive: { label: 'Dive / All-In', desc: 'Commit all resources for hard engage on objective. Win fast or wipe.', simKey: 'ancient_dive' },
+    },
+  },
+  defensiveTactics: {
+    label: 'Defensive Tactics',
+    options: {
+      defend: { label: 'Defend Pressured Lane', desc: 'Reinforce the lane being pressured. Reduces opponent Root damage when ahead.', simKey: 'def_defend' },
+      fight:  { label: 'Force Fight',           desc: 'Proactively engage to reset defensive pressure. High risk, resets momentum.', simKey: 'def_fight' },
+    },
+  },
+};
+
+const TACTICS_COMP_PRESETS = {
+  ENGAGE:    { laneFocus:'all',     jungleStyle:'shrines', wardenCall:'always',   topJoinWarden:'always',   objectiveSetup:'group',    combatStrategy:'engage', wardenBuff:'group5',  ancientSiege:'dive', defensiveTactics:'fight'  },
+  POKE:      { laneFocus:'mid_bot', jungleStyle:'farm',    wardenCall:'flexible', topJoinWarden:'flexible', objectiveSetup:'flexible', combatStrategy:'poke',   wardenBuff:'1-4',     ancientSiege:'poke', defensiveTactics:'defend' },
+  SCALING:   { laneFocus:'mid_bot', jungleStyle:'farm',    wardenCall:'concede',  topJoinWarden:'flexible', objectiveSetup:'flexible', combatStrategy:'poke',   wardenBuff:'group5',  ancientSiege:'poke', defensiveTactics:'defend' },
+  ASSASSIN:  { laneFocus:'top_mid', jungleStyle:'counter', wardenCall:'flexible', topJoinWarden:'never',    objectiveSetup:'flexible', combatStrategy:'engage', wardenBuff:'1-4',     ancientSiege:'dive', defensiveTactics:'fight'  },
+  PROTECT:   { laneFocus:'mid_bot', jungleStyle:'farm',    wardenCall:'concede',  topJoinWarden:'flexible', objectiveSetup:'group',    combatStrategy:'poke',   wardenBuff:'group5',  ancientSiege:'poke', defensiveTactics:'defend' },
+  SPLITPUSH: { laneFocus:'top_mid', jungleStyle:'farm',    wardenCall:'concede',  topJoinWarden:'never',    objectiveSetup:'split',    combatStrategy:'bait',   wardenBuff:'1-3-1',   ancientSiege:'poke', defensiveTactics:'defend' },
+};
+
+function delegateToAnalyst(humanCompType, enemyCompType) {
+  if (!G) return;
+  const team = G.teams[G.humanTeamId];
+  const analyst = (G.staff || []).find(s => s.role === 'analyst');
+
+  // Base preset for your comp
+  const basePreset = TACTICS_COMP_PRESETS[humanCompType] || TACTICS_COMP_PRESETS['ENGAGE'];
+  // Enemy-aware preset
+  const enemyPreset = TACTICS_COMP_PRESETS[enemyCompType] || null;
+
+  // Quality of analyst affects how much we optimize vs just using base comp preset
+  const analystDR = analyst ? (analyst.attrs?.draftReading ?? analyst.stat ?? 10) : 0;
+  // 0-stat = pure random noise; 20-stat = near-optimal
+  const quality = analystDR / 20; // 0.0 – 1.0
+
+  // Build merged tactics
+  const keys = Object.keys(TACTICS_DEFS);
+  keys.forEach(key => {
+    const def = TACTICS_DEFS[key];
+    const optionKeys = Object.keys(def.options);
+    const baseVal = basePreset[key] || optionKeys[0];
+
+    if (quality < 0.3) {
+      // Low quality: mostly random
+      const randIdx = Math.floor(Math.random() * optionKeys.length);
+      team.tactics[key] = optionKeys[randIdx];
+    } else if (quality < 0.7) {
+      // Medium quality: base preset with some enemy awareness
+      team.tactics[key] = baseVal;
+    } else {
+      // High quality: optimal for matchup
+      // Use enemy-aware override if available
+      const enemyVal = enemyPreset ? enemyPreset[key] : null;
+      if (enemyVal && Math.random() < quality) {
+        // Pick whichever is better for countering enemy
+        team.tactics[key] = enemyVal !== baseVal ? baseVal : enemyVal; // favor own comp
+      } else {
+        team.tactics[key] = baseVal;
+      }
+    }
+  });
+}
+
 // ─── Manager Traits ───────────────────────────────────────────────────────────
 
 const MANAGER_TRAITS = {
@@ -493,7 +620,16 @@ function initGame(humanTeamId) {
       roster:  buildStartingLineup(td.id),
       academy: academy.map(p => p.id),
       tactics: {
-        playstyle: td.id === humanTeamId ? 'engage' : randomPlaystyle(),
+        playstyle:        td.id === humanTeamId ? 'engage' : randomPlaystyle(),
+        laneFocus:        'all',
+        jungleStyle:      'farm',
+        wardenCall:       'flexible',
+        topJoinWarden:    'flexible',
+        objectiveSetup:   'flexible',
+        combatStrategy:   'engage',
+        wardenBuff:       'group5',
+        ancientSiege:     'poke',
+        defensiveTactics: 'defend',
       },
       facilities: defaultFacilities(),
       weeklyWages: calcWagesBill(td.id),

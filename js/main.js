@@ -127,6 +127,7 @@ function _startSeriesGame() {
   document.getElementById('between-games-panel').style.display = 'none';
   document.getElementById('comp-synergies').innerHTML         = '';
   document.getElementById('role-assignment-phase').style.display = 'none';
+  document.getElementById('tactics-phase').style.display     = 'none';
   setText('match-team-blue', ss.blueName);
   setText('match-team-red',  ss.redName);
 
@@ -155,6 +156,7 @@ function onStartMatch() {
 
   document.getElementById('draft-phase').style.display   = 'none';
   document.getElementById('role-assignment-phase').style.display = 'none';
+  document.getElementById('tactics-phase').style.display = 'none';
   document.getElementById('pbp-container').style.display = 'block';
   document.getElementById('pbp-results').style.display   = 'none';
   document.getElementById('pbp-events').innerHTML        = '';
@@ -189,6 +191,7 @@ function onSkipMatch() {
 
   document.getElementById('draft-phase').style.display   = 'none';
   document.getElementById('role-assignment-phase').style.display = 'none';
+  document.getElementById('tactics-phase').style.display = 'none';
   document.getElementById('pbp-container').style.display = 'block';
   if (typeof initLiveStats === 'function' && draft) {
     initLiveStats(draft, blueName, redName);
@@ -312,26 +315,30 @@ function _showBetweenGames() {
   </div>
   <div class="bgp-label">${fmt} Series · Game ${gameNum} next</div>`;
 
-  // Tactic options
-  const tactics = Object.entries(PLAYSTYLES).map(([key, val]) => {
-    const active = G.teams[G.humanTeamId].tactics.playstyle === key;
-    return `<div class="bgp-tactic ${active ? 'bgp-tactic-active' : ''}" onclick="onBetweenGamesTactic('${key}')">
-      <div class="bgp-tactic-name">${val.name}</div>
-      <div class="bgp-tactic-desc">${val.desc}</div>
+  // Full 9-dimension tactics for between-games
+  const curTactics = G.teams[G.humanTeamId].tactics;
+  const tacticRows = typeof TACTICS_DEFS !== 'undefined' ? Object.entries(TACTICS_DEFS).map(([key, def]) => {
+    const optBtns = Object.entries(def.options).map(([optKey, opt]) => {
+      const active = (curTactics[key] || '') === optKey;
+      return `<button class="bgp-tactic-btn ${active ? 'bgp-tactic-btn-active' : ''}" onclick="onBetweenGamesTacticDim('${key}','${optKey}')">${opt.label}</button>`;
+    }).join('');
+    return `<div class="bgp-tactic-row">
+      <div class="bgp-tactic-row-label">${def.label}</div>
+      <div class="bgp-tactic-row-opts">${optBtns}</div>
     </div>`;
-  }).join('');
+  }).join('') : '';
 
   const tacticsHtml = `<div class="bgp-tactics-wrap">
     <div class="bgp-section-label">ADJUST TACTICS FOR GAME ${gameNum}</div>
-    <div class="bgp-tactics-grid">${tactics}</div>
+    <div class="bgp-tactics-dims">${tacticRows}</div>
   </div>`;
 
   document.getElementById('between-games-content').innerHTML = scoreHtml + tacticsHtml;
 }
 
-function onBetweenGamesTactic(key) {
+function onBetweenGamesTacticDim(key, value) {
   if (!G || !_seriesState) return;
-  G.teams[G.humanTeamId].tactics.playstyle = key;
+  G.teams[G.humanTeamId].tactics[key] = value;
   _showBetweenGames(); // re-render to update active
 }
 
@@ -852,7 +859,8 @@ function onConfirmRoleAssignment() {
 
   document.getElementById('role-assignment-phase').style.display = 'none';
   renderDraftSynergies(draft);
-  document.getElementById('draft-actions').style.display = 'flex';
+  // Show tactics phase before match start
+  showTacticsPhase();
 }
 
 // ─── DOM Ready ────────────────────────────────────────────────────────────────

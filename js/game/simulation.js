@@ -232,7 +232,9 @@ function decideAction(agent, allies, enemies, objs, jungles, tick, phase) {
 
   const composure = agent.playerRef?.stats?.composure || 10;
   const gameSense = agent.playerRef?.stats?.gameSense  || 10;
-  const fleeHP    = 0.12 + (1 - composure / 20) * 0.18;
+  // Tactic: aggression modifier adjusts flee threshold (lower = more aggressive, higher = more cautious)
+  const aggMod = agent._tacticAggression || 1.0;
+  const fleeHP = (0.12 + (1 - composure / 20) * 0.18) / aggMod;
 
   // 1. Critical HP → recall
   if (agent.hp / agent.maxHp < 0.08) {
@@ -271,17 +273,22 @@ function decideAction(agent, allies, enemies, objs, jungles, tick, phase) {
 
   const enemySide = agent.side === 'blue' ? 'red' : 'blue';
 
-  // 5. Jungle: jungle or gank
+  // 5. Jungle: jungle or gank (modified by tactic flags)
   if (agent.pos === 'jungle') {
-    if (gameSense > 12) {
-      const gankTarget = enemies.find(e => !e.isDead && e.hp/e.maxHp < 0.55 && dist(agent,e) < 100);
+    const gankHP  = agent._tacticObjWeight ? 0.70 : 0.55; // shrine ganking: attack healthier enemies
+    const gankGS  = agent._tacticObjWeight ? 9 : 12;      // lower gameSense threshold for shrine style
+    const gankDst = agent._tacticEnemyJgWeight ? 130 : 100; // counter-jungling extends reach
+    if (gameSense > gankGS) {
+      const gankTarget = enemies.find(e => !e.isDead && e.hp/e.maxHp < gankHP && dist(agent,e) < gankDst);
       if (gankTarget) {
         agent.state  = 'fighting';
         agent.target = { type:'champion', ref: gankTarget };
         return;
       }
     }
-    const camp = jungles.filter(j => j.alive && j.side === agent.side)
+    // Counter-jungling: also target enemy camps
+    const campSide = agent._tacticEnemyJgWeight ? (agent.side === 'blue' ? 'red' : 'blue') : agent.side;
+    const camp = jungles.filter(j => j.alive && j.side === campSide)
                         .sort((a,b) => dist(agent,a) - dist(agent,b))[0];
     if (camp) {
       agent.state  = 'jungling';
@@ -708,6 +715,61 @@ let _commIdx = 0;
 
 // ─── Main simulation entry point ──────────────────────────────────────────────
 
+function _applyTacticsModifiers(agents, side) {
+  // Read human team tactics from global G state (G loaded in state.js before sim)
+  if (typeof G === 'undefined' || !G) return;
+  const humanId = G.humanTeamId;
+  const humanTeam = G.teams[humanId];
+  if (!humanTeam) return;
+  const t = humanTeam.tactics;
+  if (!t) return;
+
+  // Determine which side is human
+  const isHumanSide = humanTeam.isHuman;
+  // agents are all blue or all red here, check by side
+  const humanSide = agents[0]?.side;
+
+  agents.forEach(ag => {
+    // Combat strategy modifiers (affects all agents on the human side)
+    if (t.combatStrategy === 'poke') {
+      ag.statBonus = (ag.statBonus || 1);
+      ag._tacticAggression = 0.75; // agents more cautious
+    } else if (t.combatStrategy === 'engage') {
+      ag._tacticAggression = 1.2;  // agents engage sooner
+    } else if (t.combatStrategy === 'bait') {
+      ag._tacticAggression = 0.9;
+      ag._tacticMobility   = 1.1;
+    }
+
+    // Jungle style
+    if (ag.pos === 'jungle') {
+      if (t.jungleStyle === 'shrines') ag._tacticObjWeight = 1.4;
+      else if (t.jungleStyle === 'counter') ag._tacticEnemyJgWeight = 1.3;
+      else ag._tacticFarmWeight = 1.2;
+    }
+
+    // Objective setup
+    if (t.objectiveSetup === 'group')     ag._tacticGrouping = 1.3;
+    else if (t.objectiveSetup === 'split') ag._tacticSplit    = 1.3;
+
+    // Ancient siege style
+    if (t.ancientSiege === 'dive') ag._tacticAncientDive = true;
+
+    // Top laner warden join
+    if (ag.pos === 'top') {
+      if (t.topJoinWarden === 'always') ag._tacticWardenJoin  = 1.5;
+      else if (t.topJoinWarden === 'never') ag._tacticWardenJoin = 0.3;
+    }
+
+    // Lane focus → ADC/jungler get slight boost
+    if (t.laneFocus === 'mid_bot' && (ag.pos === 'adc' || ag.pos === 'support')) {
+      ag._tacticLanePriority = 1.15;
+    } else if (t.laneFocus === 'top_mid' && (ag.pos === 'top' || ag.pos === 'jungle')) {
+      ag._tacticLanePriority = 1.15;
+    }
+  });
+}
+
 function simulateMatch(blueTeamArr, redTeamArr, blueName, redName, preDraft) {
   _commIdx = 0;
   const draft = preDraft || draftChampions(blueTeamArr, redTeamArr);
@@ -718,6 +780,14 @@ function simulateMatch(blueTeamArr, redTeamArr, blueName, redName, preDraft) {
   const redAgents  = redTeamArr.map((p, i) =>
     initAgent('red',  i, p, (draft.red[i]?.champion  || draft.red[i])  || 'Bombspore'));
   const all = [...blueAgents, ...redAgents];
+
+  // Apply tactics modifiers for human team
+  if (typeof G !== 'undefined' && G) {
+    const humanTeam = G.teams[G.humanTeamId];
+    const humanSide = (humanTeam && blueName === humanTeam.name) ? 'blue' : 'red';
+    const humanAgents = humanSide === 'blue' ? blueAgents : redAgents;
+    _applyTacticsModifiers(humanAgents, humanSide);
+  }
 
   all.forEach(ag => buyItems(ag));
 

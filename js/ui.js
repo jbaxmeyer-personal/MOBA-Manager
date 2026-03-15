@@ -1087,6 +1087,146 @@ function renderScouting() {
   setHtml('scouting-content', scoutStatus + discoveredHtml);
 }
 
+// ─── Tactics Phase ────────────────────────────────────────────────────────────
+
+let _tacticsContext = null; // { humanCompType, enemyCompType, draft }
+
+function showTacticsPhase(context) {
+  if (context) _tacticsContext = context;
+  document.getElementById('tactics-phase').style.display = 'block';
+  document.getElementById('draft-actions').style.display = 'none';
+  renderTacticsPhase();
+}
+
+function renderTacticsPhase() {
+  if (!G || !TACTICS_DEFS) return;
+  const tactics = G.teams[G.humanTeamId].tactics;
+  const draft   = (typeof _matchContext !== 'undefined') ? _matchContext?.draft : null;
+
+  // Helper: build a tactic dimension block
+  function tacticBlock(key) {
+    const def = TACTICS_DEFS[key];
+    if (!def) return '';
+    const optHtml = Object.entries(def.options).map(([optKey, opt]) => {
+      const active = (tactics[key] || '') === optKey;
+      return `<button class="tp-option ${active ? 'tp-option-active' : ''}"
+        onclick="onSetTactic('${key}','${optKey}')"
+        onmouseenter="document.getElementById('tp-desc-bar').textContent='${opt.desc.replace(/'/g,"\\'")}'"
+        onmouseleave="document.getElementById('tp-desc-bar').textContent='Hover a tactic option to see its description.'"
+      >${opt.label}</button>`;
+    }).join('');
+    return `<div class="tp-section">
+      <div class="tp-section-label">${def.label}</div>
+      <div class="tp-options">${optHtml}</div>
+    </div>`;
+  }
+
+  // Left column: lane + jungle directives
+  const leftHtml = ['laneFocus', 'jungleStyle', 'wardenCall', 'topJoinWarden'].map(tacticBlock).join('');
+
+  // Middle column: objective + fight directives
+  const midHtml = ['objectiveSetup', 'combatStrategy', 'wardenBuff'].map(tacticBlock).join('');
+
+  // Right column: ancient siege, defensive + matchup panel
+  const rightTactics = ['ancientSiege', 'defensiveTactics'].map(tacticBlock).join('');
+
+  // Matchup panel (if draft available)
+  let matchupHtml = '';
+  if (draft && draft.blue && draft.red) {
+    const roleMap = { top:'Top', jungle:'JG', mid:'Mid', adc:'ADC', support:'Sup' };
+    const rolePosCss = { top:'pos-top', jungle:'pos-jungle', mid:'pos-mid', adc:'pos-adc', support:'pos-support' };
+    const humanSide = (typeof _draftState !== 'undefined') ? _draftState?.humanSide : 'blue';
+    const yourSide  = humanSide || 'blue';
+    const cpuSide   = yourSide === 'blue' ? 'red' : 'blue';
+    const yourPicks = draft[yourSide] || [];
+    const cpuPicks  = draft[cpuSide]  || [];
+
+    const matchupRows = POSITIONS.map((pos, i) => {
+      const yourEntry = yourPicks.find(p => p.pos === pos) || yourPicks[i];
+      const cpuEntry  = cpuPicks.find(p => p.pos === pos)  || cpuPicks[i];
+      const yourChamp = typeof yourEntry === 'string' ? yourEntry : (yourEntry?.champion || '?');
+      const cpuChamp  = typeof cpuEntry  === 'string' ? cpuEntry  : (cpuEntry?.champion  || '?');
+      const rLabel = roleMap[pos] || pos;
+      return `<div class="tp-matchup-row">
+        <span class="tp-matchup-your">${yourChamp}</span>
+        <span class="pos-badge ${rolePosCss[pos]||''}" style="font-size:10px">${rLabel}</span>
+        <span class="tp-matchup-vs">vs</span>
+        <span class="tp-matchup-cpu">${cpuChamp}</span>
+      </div>`;
+    }).join('');
+
+    // Analyst opponent scouting indicator
+    const analyst = (G.staff || []).find(s => s.role === 'analyst');
+    const oppScout = analyst ? (analyst.attrs?.opponentScouting ?? analyst.stat ?? 10) : 0;
+    const analystHint = analyst && oppScout >= 12
+      ? `<div class="tp-analyst-hint">🔍 ${analyst.name}: ${_generateAnalystHint(oppScout, draft, yourSide)}</div>`
+      : '';
+
+    matchupHtml = `<div class="tp-matchup-panel">
+      <div class="tp-section-label">Matchup</div>
+      <div class="tp-matchup-sides">
+        <span style="color:#4fc3f7;font-size:11px">YOU</span>
+        <span></span><span></span>
+        <span style="color:#ff7b7b;font-size:11px">OPP</span>
+      </div>
+      ${matchupRows}
+      ${analystHint}
+    </div>`;
+  }
+
+  document.getElementById('tp-col-left').innerHTML  = `<div class="tp-col-header">Lane & Jungle</div>${leftHtml}`;
+  document.getElementById('tp-col-mid').innerHTML   = `<div class="tp-col-header">Objectives & Fights</div>${midHtml}`;
+  document.getElementById('tp-col-right').innerHTML = `<div class="tp-col-header">Siege & Defense</div>${rightTactics}${matchupHtml}`;
+}
+
+function _generateAnalystHint(oppScout, draft, yourSide) {
+  // Simple hint based on analyst scouting level
+  const hints = [
+    'Opponent has strong early game — prepare for early skirmishes.',
+    'Enemy comp has limited engage — poke them down before committing.',
+    'Opponent relying on scaling — consider early aggression.',
+    'Counter-pick advantage in Mid — assign your best mid player carefully.',
+    'Enemy jungler is farm-heavy — consider counter-jungling.',
+  ];
+  const idx = Math.floor((oppScout / 20) * hints.length);
+  return hints[Math.min(idx, hints.length - 1)];
+}
+
+function onSetTactic(key, value) {
+  if (!G) return;
+  G.teams[G.humanTeamId].tactics[key] = value;
+  renderTacticsPhase();
+}
+
+function onDelegateToAnalyst() {
+  if (!G) return;
+  const draft = (typeof _matchContext !== 'undefined') ? _matchContext?.draft : null;
+  const humanSide = (typeof _draftState !== 'undefined') ? _draftState?.humanSide : 'blue';
+  let humanCompType = 'ENGAGE', enemyCompType = 'ENGAGE';
+  if (draft) {
+    const yourPicks = (draft[humanSide] || []).map(p => typeof p === 'string' ? p : p.champion);
+    const cpuSide   = humanSide === 'blue' ? 'red' : 'blue';
+    const cpuPicks  = (draft[cpuSide]  || []).map(p => typeof p === 'string' ? p : p.champion);
+    if (typeof getDominantCompType === 'function') {
+      humanCompType = getDominantCompType(yourPicks) || 'ENGAGE';
+      enemyCompType = getDominantCompType(cpuPicks)  || 'ENGAGE';
+    }
+  }
+  delegateToAnalyst(humanCompType, enemyCompType);
+  renderTacticsPhase();
+}
+
+function onConfirmTactics() {
+  document.getElementById('tactics-phase').style.display = 'none';
+  document.getElementById('draft-actions').style.display = 'flex';
+}
+
+function onSkipTactics() {
+  // Keep current tactics, just proceed
+  document.getElementById('tactics-phase').style.display = 'none';
+  document.getElementById('draft-actions').style.display = 'flex';
+}
+
 // ─── Manager Profile ──────────────────────────────────────────────────────────
 
 function renderManagerProfile() {
