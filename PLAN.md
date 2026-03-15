@@ -570,7 +570,7 @@ FM-style "Club Overview" screen — the first thing you see when you enter manag
 
 ---
 
-### 9F — Champion Info Browser
+### 9F — Champion Info Browser ✅ DONE
 A standalone "encyclopedia" panel for browsing all TAG champions, separate from the draft info panel.
 
 **Features:**
@@ -584,7 +584,7 @@ A standalone "encyclopedia" panel for browsing all TAG champions, separate from 
 
 ---
 
-### 9G — Item Info Browser
+### 9G — Item Info Browser ✅ DONE
 Encyclopedia for all 23 TAG items. Helps managers understand item priorities and set preferences.
 
 **Features:**

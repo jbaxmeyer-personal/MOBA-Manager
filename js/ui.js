@@ -105,6 +105,8 @@ function showMain(name) {
     case 'staff':        renderStaff(); break;
     case 'facilities':   renderFacilities(); break;
     case 'teaminfo':     renderTeamInfo(); break;
+    case 'champions':    renderChampionBrowser(); break;
+    case 'items':        renderItemBrowser(); break;
   }
 }
 
@@ -1092,6 +1094,208 @@ function renderScouting() {
   }
 
   setHtml('scouting-content', scoutStatus + discoveredHtml);
+}
+
+// ─── Item Browser ─────────────────────────────────────────────────────────────
+
+let _itemFilter = 'all';
+let _itemSelected = null;
+
+function renderItemBrowser() {
+  const statKeyLabel = {
+    physDmg:'AD', abilityPower:'AP', maxHp:'HP', physResist:'Armor', magicResist:'MR',
+    vamp:'Vamp', spellVamp:'SpVamp', moveSpeed:'Move', magicPen:'MagPen',
+    physPen:'ArmPen', critChance:'Crit', cooldownReduction:'CDR', hpRegen:'HPRegen',
+    attackRange:'Range',
+  };
+
+  // Gather all unique role categories
+  const allRoles = [...new Set(ITEMS.flatMap(i => i.forRoles || []))].sort();
+  const filterRoles = ['all', ...allRoles];
+
+  const filtered = _itemFilter === 'all'
+    ? ITEMS
+    : ITEMS.filter(i => (i.forRoles || []).includes(_itemFilter));
+
+  const filterBtns = filterRoles.map(r =>
+    `<button class="news-filter-btn ${_itemFilter===r?'active':''}"
+      onclick="_itemFilter='${r}';renderItemBrowser()">${r === 'all' ? 'All' : r.charAt(0).toUpperCase()+r.slice(1)}</button>`
+  ).join('');
+
+  const cards = filtered.map(item => {
+    const statsText = Object.entries(item.stats || {}).map(([k, v]) => {
+      const label = statKeyLabel[k] || k;
+      const val   = typeof v === 'number' && v < 1 ? `+${(v*100).toFixed(0)}%` : `+${v}`;
+      return `${val} ${label}`;
+    }).join(' · ');
+
+    const roleTags = (item.forRoles || []).map(r =>
+      `<span class="ib-role-tag">${r}</span>`).join('');
+
+    return `<div class="ib-card ${_itemSelected===item.id?'ib-selected':''}"
+        onclick="_itemSelected='${item.id}';renderItemBrowser()">
+      <div class="ib-name">${_escHtml(item.name)}</div>
+      <div class="ib-cost">${fmtMoney(item.cost)}</div>
+      ${statsText ? `<div class="ib-stats">${statsText}</div>` : ''}
+      ${roleTags ? `<div class="ib-roles">${roleTags}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Detail for selected item
+  let detailHtml = '';
+  if (_itemSelected) {
+    const item = ITEMS.find(i => i.id === _itemSelected);
+    if (item) {
+      const statsRows = Object.entries(item.stats || {}).map(([k, v]) => {
+        const label = statKeyLabel[k] || k;
+        const val   = typeof v === 'number' && v < 1 ? `+${(v*100).toFixed(0)}%` : `+${v}`;
+        return `<div class="ti-stat-row" style="font-size:13px">
+          <span class="ti-label">${label}</span>
+          <span class="ti-val" style="color:var(--win)">${val}</span>
+        </div>`;
+      }).join('');
+      const roleTags = (item.forRoles || []).map(r =>
+        `<span class="ib-role-tag">${r.charAt(0).toUpperCase()+r.slice(1)}</span>`).join('');
+
+      detailHtml = `
+        <div class="dci-header" style="margin-bottom:10px">
+          <span class="dci-name">${_escHtml(item.name)}</span>
+          <span style="color:var(--gold);font-size:16px;margin-left:8px">${fmtMoney(item.cost)}</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">${roleTags}</div>
+        <div style="margin-bottom:12px">${statsRows}</div>
+        ${item.description ? `<div class="ib-desc">${_escHtml(item.description)}</div>` : ''}
+      `;
+    }
+  }
+
+  setHtml('items-content', `
+    <div class="cb-filters">${filterBtns}</div>
+    <div style="display:flex;gap:14px;margin-top:12px;min-height:0;height:calc(100vh - 220px)">
+      <div style="flex:1;overflow-y:auto">
+        <div class="ib-grid">${cards || '<div style="color:var(--text-dim);padding:20px">No items match this filter.</div>'}</div>
+      </div>
+      ${_itemSelected ? `<div class="cb-detail" style="width:260px;flex-shrink:0">${detailHtml}</div>` : ''}
+    </div>
+  `);
+}
+
+// ─── Champion Browser ─────────────────────────────────────────────────────────
+
+let _champFilter = { cls: 'all', role: 'all' };
+let _champSelected = null;
+
+function renderChampionBrowser() {
+  const allChamps = Object.entries(CHAMPIONS);
+  const classes   = ['all', ...new Set(allChamps.map(([,c]) => c.class).filter(Boolean))];
+  const roles     = ['all', 'Top', 'Jungle', 'Mid', 'ADC', 'Support'];
+  const roleMap   = { top:'Top', jungle:'Jungle', mid:'Mid', adc:'ADC', support:'Support',
+                      arcanist:'Mid', vanguard:'Top', ranger:'Jungle', hunter:'ADC', warden:'Support' };
+
+  const filtered = allChamps.filter(([name, cd]) => {
+    if (_champFilter.cls !== 'all' && cd.class !== _champFilter.cls) return false;
+    if (_champFilter.role !== 'all') {
+      const r = roleMap[cd.role] || cd.role;
+      if (r !== _champFilter.role) return false;
+    }
+    return true;
+  });
+
+  const classFilters = classes.map(c =>
+    `<button class="news-filter-btn ${_champFilter.cls===c?'active':''}"
+      onclick="_champFilter.cls='${c}';renderChampionBrowser()">${c === 'all' ? 'All Classes' : c}</button>`
+  ).join('');
+
+  const roleFilters = roles.map(r =>
+    `<button class="news-filter-btn ${_champFilter.role===r?'active':''}"
+      onclick="_champFilter.role='${r}';renderChampionBrowser()">${r === 'all' ? 'All Roles' : r}</button>`
+  ).join('');
+
+  const grid = filtered.map(([name, cd]) => {
+    const b = CLASS_BADGE[cd.class] || CLASS_BADGE[(cd.class||'').toLowerCase()];
+    const COMP_COLORS = { ENGAGE:'#e67e22', POKE:'#3498db', PICK:'#9b59b6', PROTECT:'#27ae60', SCALING:'#c89b3c' };
+    const compColor = cd.compType ? (COMP_COLORS[cd.compType] || '#888') : null;
+    const roleDisplay = roleMap[cd.role] || cd.role || '';
+    const roleCss = { Top:'pos-top', Jungle:'pos-jungle', Mid:'pos-mid', ADC:'pos-adc', Support:'pos-support' }[roleDisplay] || '';
+    const isSelected = _champSelected === name;
+
+    // Career stats from all players
+    let gamesTotal = 0, winsTotal = 0;
+    Object.values(G?.players || {}).forEach(p => {
+      const cs = p.career?.championStats?.[name];
+      if (cs) { gamesTotal += cs.games || 0; winsTotal += cs.wins || 0; }
+    });
+    const wr = gamesTotal >= 3 ? `${Math.round(winsTotal/gamesTotal*100)}% WR (${gamesTotal}g)` : '';
+
+    return `<div class="cb-card ${isSelected ? 'cb-selected' : ''}" onclick="_champSelected='${name.replace(/'/g,"\\'")}';renderChampionBrowser()">
+      <div class="cb-card-name">${_escHtml(name)}</div>
+      <div class="cb-card-badges">
+        ${b ? `<span class="class-badge" style="color:${b.color};border-color:${b.color}">${b.label}</span>` : ''}
+        ${compColor ? `<span class="dci-comp" style="color:${compColor};border-color:${compColor}">${cd.compType}</span>` : ''}
+        ${roleDisplay ? `<span class="pos-badge ${roleCss}">${roleDisplay}</span>` : ''}
+      </div>
+      ${wr ? `<div class="cb-wr">${wr}</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Detail panel for selected champion
+  let detailHtml = '<div class="cb-detail-empty">Select a champion to view details</div>';
+  if (_champSelected && CHAMPIONS[_champSelected]) {
+    const cd = CHAMPIONS[_champSelected];
+    const b  = CLASS_BADGE[cd.class] || CLASS_BADGE[(cd.class||'').toLowerCase()];
+    const COMP_COLORS = { ENGAGE:'#e67e22', POKE:'#3498db', PICK:'#9b59b6', PROTECT:'#27ae60', SCALING:'#c89b3c' };
+    const compColor = cd.compType ? (COMP_COLORS[cd.compType] || '#888') : null;
+    const roleDisplay = roleMap[cd.role] || cd.role || '';
+    const roleCss = { Top:'pos-top', Jungle:'pos-jungle', Mid:'pos-mid', ADC:'pos-adc', Support:'pos-support' }[roleDisplay] || '';
+
+    const stat = (label, val) => `<div class="dci-stat"><span class="dci-stat-label">${label}</span><span class="dci-stat-val">${val}</span></div>`;
+    const abilityHtml = (key, icon) => {
+      const ab = cd.abilities?.[key];
+      if (!ab || key === 'aa') return '';
+      const dmgStr = ab.dmg ? `${ab.dmg}${ab.apRatio ? ` (+${ab.apRatio} AP)` : ''}` : '';
+      const typeStr = ab.dmgType === 'magic' ? '✦' : '⚔';
+      const ccStr = ab.effects?.find(e => e.type === 'cc')?.ccType || '';
+      return `<div class="dci-ability">
+        <div class="dci-ability-header">
+          <span class="dci-ability-icon">${icon}</span>
+          <span class="dci-ability-name">${_escHtml(ab.name || key.toUpperCase())}</span>
+          <span class="dci-ability-cd">cd: ${ab.cd}s</span>
+          ${dmgStr ? `<span class="dci-ability-dmg">${typeStr} ${dmgStr}</span>` : ''}
+          ${ccStr ? `<span class="dci-ability-cc">${ccStr}</span>` : ''}
+        </div>
+      </div>`;
+    };
+
+    detailHtml = `<div class="dci-wrap">
+      <div class="dci-left">
+        <div class="dci-header">
+          <span class="dci-name">${_escHtml(_champSelected)}</span>
+          ${b ? `<span class="class-badge" style="color:${b.color};border-color:${b.color}">${b.label}</span>` : ''}
+          ${compColor ? `<span class="dci-comp" style="color:${compColor};border-color:${compColor}">${cd.compType}</span>` : ''}
+          ${roleDisplay ? `<span class="pos-badge ${roleCss}">${roleDisplay}</span>` : ''}
+        </div>
+        ${cd.lore ? `<div class="dci-lore">${_escHtml(cd.lore)}</div>` : ''}
+        <div class="dci-stats">
+          ${stat('HP', cd.baseHp)} ${stat('ATK', cd.baseDmg)} ${stat('Range', cd.attackRange)}
+          ${stat('Move', cd.moveSpeed)} ${stat('Armor', cd.physResist)} ${stat('MR', cd.magicResist)}
+        </div>
+      </div>
+      <div class="dci-right">
+        <div class="dci-abilities-title">Abilities</div>
+        ${abilityHtml('q','Q')}${abilityHtml('e','E')}${abilityHtml('ult','R')}
+        ${cd.passive ? `<div class="dci-passive"><span class="dci-ability-icon">P</span> <span class="dci-passive-text">${_escHtml(cd.passive.desc||'')}</span></div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  setHtml('champions-content', `
+    <div class="cb-filters">${classFilters}</div>
+    <div class="cb-filters" style="margin-top:6px">${roleFilters}</div>
+    <div class="cb-layout">
+      <div class="cb-grid">${grid || '<div style="color:var(--text-dim);padding:20px">No champions match this filter.</div>'}</div>
+      <div class="cb-detail">${detailHtml}</div>
+    </div>
+  `);
 }
 
 // ─── Team Info / Club Overview ────────────────────────────────────────────────

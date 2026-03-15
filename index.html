@@ -63,6 +63,9 @@
       <div class="nav-divider"></div>
       <a class="nav-item" data-screen="news"       onclick="showMain('news')">📰 News<span class="nav-badge" id="news-badge" style="display:none"></span></a>
       <div class="nav-divider"></div>
+      <a class="nav-item" data-screen="champions"  onclick="showMain('champions')">⚔️ Champions</a>
+      <a class="nav-item" data-screen="items"      onclick="showMain('items')">🗡️ Items</a>
+      <div class="nav-divider"></div>
       <a class="nav-item" data-screen="league"     onclick="showMain('league')">🏆 League</a>
       <a class="nav-item" data-screen="schedule"   onclick="showMain('schedule')">📅 Schedule</a>
     </nav>
@@ -170,6 +173,18 @@
       <div id="panel-schedule" class="panel">
         <div class="panel-header">Season Schedule</div>
         <div id="schedule-content"></div>
+      </div>
+
+      <!-- CHAMPION BROWSER -->
+      <div id="panel-champions" class="panel">
+        <div class="panel-header">Champion Encyclopedia</div>
+        <div id="champions-content"></div>
+      </div>
+
+      <!-- ITEM BROWSER -->
+      <div id="panel-items" class="panel">
+        <div class="panel-header">Item Encyclopedia</div>
+        <div id="items-content"></div>
       </div>
 
       <!-- TEAM INFO / CLUB OVERVIEW -->
