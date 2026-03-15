@@ -20,12 +20,12 @@
 | ~~Phase 12D — Transfer Market~~ | ✅ DONE |
 | ~~Phase 12E — Fan Events Cooldown UX~~ | ✅ DONE |
 | ~~Phase 12F — Team Housing~~ | ✅ DONE |
-| Phase 13A — Draft Screen Overhaul | Full type names, roles, abilities in info panel |
-| Phase 13B — Between-Games + AC Rename + Delegate Fix | Remove tactics screen mid-series; no-random delegate |
-| Phase 13C — Map Structure Fix | 1 shrine + 1 warden; mid lane tower added |
-| Phase 13D — Kill Attribution + Gold Lead + Timer | Fix kill credit; live gold; event timer |
-| Phase 13E — Tower + Objective HP Display | HP shown on map; fall events; contested UI |
-| Phase 13F — Lane Movement + Minions | Top/Bot move; simple minion waves |
+| ~~Phase 13A — Draft Screen Overhaul~~ | ✅ DONE |
+| ~~Phase 13B — Between-Games + AC Rename + Delegate Fix~~ | ✅ DONE |
+| ~~Phase 13C — Map Structure Fix~~ | ✅ DONE |
+| ~~Phase 13D — Kill Attribution + Gold Lead + Timer~~ | ✅ DONE |
+| ~~Phase 13E — Tower + Objective HP Display~~ | ✅ DONE |
+| ~~Phase 13F — Lane Movement~~ | ✅ DONE |
 | Balance & Polish (Phase 8) | Meta system, UI polish, playtesting — not started |
 | Visual Identity (Phase 10) | Pixel-art sprites on map; long-term: isometric PixiJS view |
 
@@ -1261,7 +1261,7 @@ Full isometric battlefield replacing the 2D SVG map. Champions run around, clash
 ## Phase 13 — Match Polish + Draft UX Fix
 **Goal:** Fix the many match simulation bugs and draft UX issues found during review.
 
-### 13A — Draft Screen Overhaul [ ]
+### 13A — Draft Screen Overhaul ✅ DONE
 **Files:** `js/ui.js`, `css/style.css`
 
 - `showDraftChampInfo()`: full class name (e.g. "Mage" not "MG"), Role 1 + Role 2 (no "(flex)" suffix), lore/description shown, Physical Attack + Magic Attack as separate stats, abilities with short text descriptions
@@ -1269,14 +1269,14 @@ Full isometric battlefield replacing the 2D SVG map. Champions run around, clash
 - `renderRoleAssignment()`: full class name + both roles shown on each champion card
 - `CLASS_BADGE` labels stay for the compact grid cards only; full-name used everywhere else
 
-### 13B — Between-Games Tactics Removal + Assistant Coach Rename + Delegate Fix [ ]
+### 13B — Between-Games Tactics Removal + Assistant Coach Rename + Delegate Fix ✅ DONE
 **Files:** `js/main.js`, `js/game/state.js`, everywhere "analyst" appears
 
 - `_showBetweenGames()`: remove the tactic adjustment section entirely. Keep score + "Next Game" button only.
 - Rename "Analyst" → "Assistant Coach" in all staff role strings, UI labels, PLAN.md
 - `delegateToAnalyst()`: rewrite with ZERO randomness. Logic: pick tactics from `TACTICS_COMP_PRESETS[humanCompType]`; if AC skill ≥ 14, also apply counter-adjustments from `TACTICS_COMP_PRESETS[enemyCompType]`; deterministic — same inputs → same output every time.
 
-### 13C — Map Structure Fix [ ]
+### 13C — Map Structure Fix ✅ DONE
 **Files:** `js/game/simulation.js`
 
 Current issues:
@@ -1291,14 +1291,14 @@ New OBJ_DEFS layout:
 - Red: r_top (265,105), r_mid (205,125), r_outer (110,35), r_inner (265,190), r_heart (265,55), r_ancient (278,22)
 - Neutral: 1 shrine at (150,150), 1 warden at (150,125)
 
-### 13D — Kill Attribution + Gold Lead + Game Timer [ ]
+### 13D — Kill Attribution + Gold Lead + Game Timer ✅ DONE
 **Files:** `js/game/simulation.js`, `js/main.js`
 
 - Kill attribution: use `recentDmgFrom[]` — find the entry with the most recent tick, that agent is the killer
 - Gold lead: already tracked every tick in goldSnapshots — verify chart updates live during PBP playback (not just at end)
 - Game timer: every event object has `.time` field but event log may not display it — add time prefix to each log entry
 
-### 13E — Tower HP + Objective HP Display [ ]
+### 13E — Tower HP + Objective HP Display ✅ DONE
 **Files:** `js/ui/map.js`, `js/main.js`, `css/style.css`
 
 - Tower HP bars shown below each tower SVG element on the map
@@ -1306,7 +1306,7 @@ New OBJ_DEFS layout:
 - Shrine/warden: when agents are contesting, show a small HP indicator near the objective on the map
 - Shrine respawn indicator: when tempDown, show a countdown indicator on the map
 
-### 13F — Champion Lane Movement + Minions [ ]
+### 13F — Champion Lane Movement ✅ DONE
 **Files:** `js/game/simulation.js`
 
 - Top lane LANE_POS: extend waypoints so top/bot champions walk further up/down their respective lane edges
