@@ -706,9 +706,9 @@ function simulateMatch(blueTeamArr, redTeamArr, blueName, redName, preDraft) {
 
   // Init agents
   const blueAgents = blueTeamArr.map((p, i) =>
-    initAgent('blue', i, p, draft.blue[i] || 'Wraithfern'));
+    initAgent('blue', i, p, (draft.blue[i]?.champion || draft.blue[i]) || 'Wraithfern'));
   const redAgents  = redTeamArr.map((p, i) =>
-    initAgent('red',  i, p, draft.red[i]  || 'Bombspore'));
+    initAgent('red',  i, p, (draft.red[i]?.champion  || draft.red[i])  || 'Bombspore'));
   const all = [...blueAgents, ...redAgents];
 
   all.forEach(ag => buyItems(ag));

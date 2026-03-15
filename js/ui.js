@@ -589,77 +589,99 @@ function classBadge(champClass) {
   return `<span class="class-badge" style="color:${b.color};border-color:${b.color}">${b.label}</span>`;
 }
 
-function renderMatchDraft(blueTeamName, redTeamName, draftResult) {
-  if (!draftResult) return;
-  setText('match-team-blue', blueTeamName);
-  setText('match-team-red', redTeamName);
+function renderInteractiveDraft(availChamps) {
+  const ds = _draftState;
+  if (!ds) return;
+  const { bans, bluePicks, redPicks, step, done, humanSide } = ds;
+  const blueName = _matchContext?.blueName || 'Blue';
+  const redName  = _matchContext?.redName  || 'Red';
+  const seq = (!done && step < DRAFT_SEQUENCE.length) ? DRAFT_SEQUENCE[step] : null;
 
-  // ── Bans row ──────────────────────────────────────────────────────────────
-  const bans = draftResult.bans || { blue: [], red: [] };
-  const banChip = (c, side) =>
-    `<span class="ban-chip ban-chip-${side}" title="${c}">${c}</span>`;
-  setHtml('draft-bans',
-    `<div class="ban-row">
-      <span class="ban-row-label blue-text">Bans:</span>
-      ${bans.blue.map(c => banChip(c,'blue')).join('')}
-      <span class="ban-row-sep">·</span>
-      ${bans.red.map(c => banChip(c,'red')).join('')}
-      <span class="ban-row-label red-text">:Bans</span>
-    </div>`
-  );
-
-  // ── Build counter map: which champions are countered by the other side ────
-  const enemyClasses = (picks) =>
-    picks.map(p => p.champClass).filter(Boolean);
-  const COUNTERED_BY_UI = {
-    Tank:['Marksman'], Fighter:['Mage'], Mage:['Assassin'],
-    Marksman:['Assassin','Tank'], Assassin:['Tank','Sentinel'], Sentinel:['Assassin','Mage'],
-  };
-  const isCountered = (champClass, foeClasses) => {
-    const counters = COUNTERED_BY_UI[champClass] || [];
-    return counters.some(c => foeClasses.includes(c));
-  };
-
-  const blueEnemyClasses = enemyClasses(draftResult.red);
-  const redEnemyClasses  = enemyClasses(draftResult.blue);
-
-  // ── Picks columns ─────────────────────────────────────────────────────────
-  const col = (picks, side, foeClasses) => `
-    <div class="draft-col">
-      <div class="draft-col-label ${side === 'blue' ? 'blue-text' : 'red-text'}">${side === 'blue' ? blueTeamName : redTeamName}</div>
-      ${picks.map(p => {
-        const countered = p.champClass && isCountered(p.champClass, foeClasses);
-        return `
-        <div class="draft-pick${countered ? ' pick-countered' : ''}">
-          <span class="pick-pos">${posIcon(p.pos)}</span>
-          <span class="pick-player">${p.player ? p.player.name : '—'}</span>
-          <span class="pick-champ">${p.champion}</span>
-          ${classBadge(p.champClass)}
-          ${countered ? '<span class="counter-flag" title="Countered by enemy">⚠</span>' : ''}
-        </div>`;
-      }).join('')}
+  // ── Turn indicator ─────────────────────────────────────────────────────────
+  let turnHtml = '';
+  if (!done && seq) {
+    const isHuman   = seq.side === humanSide;
+    const teamLabel = seq.side === 'blue' ? blueName : redName;
+    const posName   = seq.type === 'pick' ? posLabel(POSITIONS[seq.posIdx]) : '';
+    const action    = seq.type === 'ban' ? 'Ban a Champion' : `Pick for ${posName}`;
+    turnHtml = `<div class="draft-turn-indicator ${isHuman ? 'turn-yours' : 'turn-cpu'}">
+      ${isHuman ? '▶ YOUR TURN —' : `${_escHtml(teamLabel)} —`} ${action}
+      ${!isHuman ? '<span class="turn-thinking">thinking…</span>' : ''}
     </div>`;
+  } else if (done) {
+    turnHtml = `<div class="draft-turn-indicator turn-done">✓ Draft Complete — Ready to play</div>`;
+  }
 
-  setHtml('draft-picks',
-    col(draftResult.blue, 'blue', blueEnemyClasses) +
-    col(draftResult.red,  'red',  redEnemyClasses)
-  );
+  // ── Ban slots ──────────────────────────────────────────────────────────────
+  const banSlot = (champ, side) => champ
+    ? `<span class="ban-chip ban-chip-${side} ban-filled">${_escHtml(champ)}</span>`
+    : `<span class="ban-slot-empty ban-slot-${side}">—</span>`;
+  const bansHtml = `<div class="ban-row">
+    <span class="ban-row-label blue-text">Blue Bans:</span>
+    ${[0,1].map(i => banSlot(bans.blue[i],'blue')).join('')}
+    <span class="ban-row-sep">·</span>
+    ${[0,1].map(i => banSlot(bans.red[i],'red')).join('')}
+    <span class="ban-row-label red-text">:Red Bans</span>
+  </div>`;
 
-  // ── Synergies + counter score ─────────────────────────────────────────────
-  const synBadges = (syns, side) => syns.map(s =>
-    `<span class="synergy ${side}-syn">${s.name}: ${s.desc}</span>`
-  ).join('');
-  const cs = draftResult.counterScore || 0;
+  // ── Pick board ─────────────────────────────────────────────────────────────
+  const pickSlot = (pickArr, posIdx, side) => {
+    const pick = pickArr[posIdx];
+    const pos  = POSITIONS[posIdx];
+    const isCurrent = !done && seq && seq.type === 'pick' && seq.side === side && seq.posIdx === posIdx;
+    return `<div class="draft-pick ${isCurrent ? 'pick-current' : ''} ${!pick ? 'pick-empty' : ''}">
+      <span class="pick-pos">${posIcon(pos)}</span>
+      <span class="pick-player">${pick ? _escHtml(pick.player?.name || '—') : posLabel(pos)}</span>
+      ${pick ? `<span class="pick-champ">${_escHtml(pick.champion)}</span>${classBadge(pick.champClass)}` : ''}
+    </div>`;
+  };
+
+  const blueCol = `<div class="draft-col">
+    <div class="draft-col-label blue-text">${_escHtml(blueName)}</div>
+    ${POSITIONS.map((_,i) => pickSlot(bluePicks, i, 'blue')).join('')}
+  </div>`;
+  const redCol  = `<div class="draft-col">
+    <div class="draft-col-label red-text">${_escHtml(redName)}</div>
+    ${POSITIONS.map((_,i) => pickSlot(redPicks, i, 'red')).join('')}
+  </div>`;
+
+  setHtml('draft-bans',  bansHtml + turnHtml);
+  setHtml('draft-picks', blueCol + redCol);
+
+  // ── Champion picker ────────────────────────────────────────────────────────
+  const pickerEl = document.getElementById('draft-champ-picker');
+  if (!pickerEl) return;
+
+  if (availChamps && availChamps.length > 0) {
+    const isBan  = seq && seq.type === 'ban';
+    const cards  = availChamps.map(champName => {
+      const cd = CHAMPIONS[champName];
+      const b  = cd ? CLASS_BADGE[cd.class.toLowerCase()] : null;
+      return `<div class="draft-champ-card" onclick="applyDraftAction('${champName.replace(/'/g,"\\'")}')">
+        <div class="dcc-name">${_escHtml(champName)}</div>
+        ${b ? `<span class="class-badge" style="color:${b.color};border-color:${b.color}">${b.label}</span>` : ''}
+      </div>`;
+    }).join('');
+    pickerEl.style.display = 'block';
+    pickerEl.innerHTML = `
+      <div class="draft-picker-label">${isBan ? '🚫 Choose a Champion to BAN' : `✓ Pick for ${posLabel(POSITIONS[seq.posIdx])}`}</div>
+      <div class="draft-champ-grid">${cards}</div>`;
+  } else {
+    pickerEl.style.display = 'none';
+    pickerEl.innerHTML = '';
+  }
+}
+
+function renderDraftSynergies(draft) {
+  const blueName = _matchContext?.blueName || 'Blue';
+  const redName  = _matchContext?.redName  || 'Red';
+  const synBadges = (syns, side) => (syns||[]).map(s =>
+    `<span class="synergy ${side}-syn">${s.name}: ${s.desc}</span>`).join('');
+  const cs = draft.counterScore || 0;
   const csLine = Math.abs(cs) >= 0.5
-    ? `<span class="counter-score ${cs > 0 ? 'blue-text' : 'red-text'}">
-        ${cs > 0 ? blueTeamName : redTeamName} has the counter edge
-       </span>`
+    ? `<span class="counter-score ${cs > 0 ? 'blue-text':'red-text'}">${cs > 0 ? _escHtml(blueName) : _escHtml(redName)} has the counter edge</span>`
     : '';
-  setHtml('comp-synergies',
-    synBadges(draftResult.blueSynergies || [], 'blue') +
-    synBadges(draftResult.redSynergies  || [], 'red') +
-    csLine
-  );
+  setHtml('comp-synergies', synBadges(draft.blueSynergies,'blue') + synBadges(draft.redSynergies,'red') + csLine);
 }
 
 // ─── renderAll ────────────────────────────────────────────────────────────────

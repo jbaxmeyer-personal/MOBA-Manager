@@ -994,6 +994,55 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
   border-radius: 3px; padding: 2px 6px; white-space: nowrap;
 }
 
+/* ── Interactive Draft ───────────────────────────────────────────────────────── */
+.draft-turn-indicator {
+  text-align: center; padding: 8px 16px; margin: 6px 0 10px;
+  border-radius: var(--radius); font-weight: 700; font-size: 13px;
+}
+.turn-yours { background: rgba(200,155,60,.15); color: var(--gold); border: 1px solid var(--gold-dim); }
+.turn-cpu   { background: rgba(255,255,255,.04); color: var(--text-dim); border: 1px solid var(--border); }
+.turn-done  { background: rgba(76,175,80,.1); color: #4caf50; border: 1px solid rgba(76,175,80,.3); }
+.turn-thinking { font-weight: 400; opacity: .7; margin-left: 6px; font-size: 11px; }
+
+.ban-slot-empty {
+  display: inline-block; min-width: 60px; text-align: center;
+  padding: 2px 7px; border-radius: 3px; font-size: 10px;
+  color: var(--border); border: 1px dashed var(--border); margin: 0 2px;
+}
+.ban-filled { opacity: .75; }
+
+.pick-current {
+  border-color: var(--gold) !important;
+  background: rgba(200,155,60,.1) !important;
+  animation: pick-pulse 1s ease-in-out infinite alternate;
+}
+.pick-empty { opacity: .5; }
+@keyframes pick-pulse {
+  from { border-color: var(--gold-dim); box-shadow: none; }
+  to   { border-color: var(--gold); box-shadow: 0 0 6px rgba(200,155,60,.35); }
+}
+
+/* Champion picker */
+.draft-champ-picker {
+  margin: 10px 0; padding: 12px 14px;
+  background: var(--panel2); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.draft-picker-label {
+  font-size: 11px; font-weight: 700; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px;
+}
+.draft-champ-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.draft-champ-card {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 9px 14px; min-width: 88px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+  cursor: pointer; transition: border-color .12s, background .12s, transform .1s;
+}
+.draft-champ-card:hover {
+  border-color: var(--gold); background: #1e1600; transform: translateY(-2px);
+}
+.dcc-name { font-weight: 700; font-size: 13px; color: var(--text-hi); white-space: nowrap; }
+
 @media (max-width: 900px) {
   .dashboard-grid     { grid-template-columns: 1fr; }
   .profile-grid       { grid-template-columns: 1fr; }

@@ -7,6 +7,24 @@ let _matchContext   = null;  // { match, blueId, redId, blueName, redName, blueR
 let _matchResult    = null;  // result from simulateMatch / quickSimulate
 let _pbpTimer       = null;
 
+const DRAFT_SEQUENCE = [
+  { side:'blue', type:'ban',  posIdx:null },
+  { side:'red',  type:'ban',  posIdx:null },
+  { side:'blue', type:'ban',  posIdx:null },
+  { side:'red',  type:'ban',  posIdx:null },
+  { side:'blue', type:'pick', posIdx:0 },
+  { side:'red',  type:'pick', posIdx:0 },
+  { side:'red',  type:'pick', posIdx:1 },
+  { side:'blue', type:'pick', posIdx:1 },
+  { side:'blue', type:'pick', posIdx:2 },
+  { side:'red',  type:'pick', posIdx:2 },
+  { side:'red',  type:'pick', posIdx:3 },
+  { side:'blue', type:'pick', posIdx:3 },
+  { side:'blue', type:'pick', posIdx:4 },
+  { side:'red',  type:'pick', posIdx:4 },
+];
+let _draftState = null;
+
 // ─── Intro / Team Select ──────────────────────────────────────────────────────
 
 function onSelectTeam(teamId) {
@@ -54,18 +72,33 @@ function onPlayMatch() {
 
   const blueRoster = getActiveRoster(blueId);
   const redRoster  = getActiveRoster(redId);
-  const draft      = draftChampions(blueRoster, redRoster);
 
-  _matchContext = { match, blueId, redId, blueName, redName, blueRoster, redRoster, humanIsHome, draft };
+  const humanSide = humanIsHome ? 'blue' : 'red';
+  _matchContext = { match, blueId, redId, blueName, redName, blueRoster, redRoster, humanIsHome, draft: null };
   _matchResult  = null;
 
   showScreen('screen-match');
-  document.getElementById('draft-phase').style.display        = 'block';
-  document.getElementById('pbp-container').style.display      = 'none';
-  document.getElementById('pbp-results').style.display        = 'none';
-  document.getElementById('pbp-events').innerHTML             = '';
+  document.getElementById('draft-phase').style.display   = 'block';
+  document.getElementById('pbp-container').style.display = 'none';
+  document.getElementById('pbp-results').style.display   = 'none';
+  document.getElementById('pbp-events').innerHTML        = '';
+  document.getElementById('draft-actions').style.display = 'none';
+  document.getElementById('comp-synergies').innerHTML    = '';
+  setText('match-team-blue', blueName);
+  setText('match-team-red',  redName);
 
-  renderMatchDraft(blueName, redName, draft);
+  _draftState = {
+    humanSide,
+    blueTeamArr: blueRoster,
+    redTeamArr:  redRoster,
+    bans: { blue: [], red: [] },
+    bluePicks: [],
+    redPicks:  [],
+    step: 0,
+    done: false,
+  };
+  renderInteractiveDraft(null);
+  advanceDraft();
 }
 
 function onStartMatch() {
@@ -394,6 +427,109 @@ function _showMatchResult(result) {
       <button class="btn-primary" onclick="returnFromMatch()">← Return to Manager</button>
     </div>
   `;
+}
+
+// ─── Interactive Draft ────────────────────────────────────────────────────────
+
+function advanceDraft() {
+  const ds = _draftState;
+  if (!ds || ds.done) return;
+  if (ds.step >= DRAFT_SEQUENCE.length) { _finalizeDraft(); return; }
+  const seq = DRAFT_SEQUENCE[ds.step];
+  if (seq.side === ds.humanSide) {
+    renderInteractiveDraft(_draftAvailableChamps(ds.step));
+  } else {
+    renderInteractiveDraft(null);
+    setTimeout(() => {
+      const c = _cpuDraftAction(ds.step);
+      if (c) applyDraftAction(c);
+    }, 420);
+  }
+}
+
+function applyDraftAction(champName) {
+  const ds = _draftState;
+  if (!ds || ds.done) return;
+  const step = ds.step;
+  const seq  = DRAFT_SEQUENCE[step];
+  const champData = CHAMPIONS[champName];
+
+  if (seq.type === 'ban') {
+    ds.bans[seq.side].push(champName);
+  } else {
+    const teamArr = seq.side === 'blue' ? ds.blueTeamArr : ds.redTeamArr;
+    const player  = teamArr[seq.posIdx];
+    const entry   = { pos: POSITIONS[seq.posIdx], player, champion: champName, champClass: champData?.class || '' };
+    if (seq.side === 'blue') ds.bluePicks.push(entry);
+    else                     ds.redPicks.push(entry);
+  }
+
+  ds.step++;
+
+  if (ds.step >= DRAFT_SEQUENCE.length) {
+    _finalizeDraft();
+  } else {
+    renderInteractiveDraft(null);
+    advanceDraft();
+  }
+}
+
+function _draftAvailableChamps(step) {
+  const ds   = _draftState;
+  const taken = new Set([
+    ...ds.bans.blue, ...ds.bans.red,
+    ...ds.bluePicks.map(p => p.champion),
+    ...ds.redPicks.map(p => p.champion),
+  ]);
+  const seq  = DRAFT_SEQUENCE[step];
+  if (seq.type === 'pick') {
+    const teamArr = seq.side === 'blue' ? ds.blueTeamArr : ds.redTeamArr;
+    const player  = teamArr[seq.posIdx];
+    const pool    = (player?.champions || []).filter(c => !taken.has(c));
+    if (pool.length > 0) return pool;
+    // Fallback: any available champ of appropriate class
+    return Object.keys(CHAMPIONS).filter(c => !taken.has(c)).slice(0, 8);
+  }
+  // Ban: all non-taken
+  return Object.keys(CHAMPIONS).filter(c => !taken.has(c));
+}
+
+function _cpuDraftAction(step) {
+  const ds  = _draftState;
+  const seq = DRAFT_SEQUENCE[step];
+  const banned   = [...ds.bans.blue, ...ds.bans.red];
+  const allPicked = [...ds.bluePicks.map(p => p.champion), ...ds.redPicks.map(p => p.champion)];
+  if (seq.type === 'ban') {
+    const foeArr = seq.side === 'blue' ? ds.redTeamArr : ds.blueTeamArr;
+    const taken  = [...banned, ...allPicked];
+    const bans   = generateBans(foeArr, 2);
+    return bans.find(b => !taken.includes(b))
+      || Object.keys(CHAMPIONS).find(c => !taken.includes(c));
+  }
+  const teamArr  = seq.side === 'blue' ? ds.blueTeamArr : ds.redTeamArr;
+  const foePicks = (seq.side === 'blue' ? ds.redPicks : ds.bluePicks).map(p => p.champion);
+  const player   = teamArr[seq.posIdx];
+  return pickChampion(player, POSITIONS[seq.posIdx], banned, allPicked, foePicks);
+}
+
+function _finalizeDraft() {
+  const ds = _draftState;
+  ds.done  = true;
+  const blueNames = ds.bluePicks.map(p => p.champion);
+  const redNames  = ds.redPicks.map(p => p.champion);
+  const draft = {
+    blue: ds.bluePicks,
+    red:  ds.redPicks,
+    bans: ds.bans,
+    blueSynergies: COMP_SYNERGIES[getDominantCompType(blueNames)] || [],
+    redSynergies:  COMP_SYNERGIES[getDominantCompType(redNames)]  || [],
+    counterScore:  getCounterScore(blueNames, redNames),
+  };
+  _matchContext.draft = draft;
+  renderInteractiveDraft(null);
+  renderDraftSynergies(draft);
+  document.getElementById('draft-actions').style.display = 'flex';
+  document.getElementById('draft-champ-picker').style.display = 'none';
 }
 
 // ─── DOM Ready ────────────────────────────────────────────────────────────────
