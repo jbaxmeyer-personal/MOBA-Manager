@@ -6,23 +6,20 @@
 
 ## Project Status Snapshot
 
-| Layer | Status | Notes |
-|---|---|---|
-| FM Shell (HTML/CSS/UI) | ✅ Done | Full TAG shell — Phase 2 complete |
-| Sim Engine | ✅ Done | **Real tick-based agent engine** — live positions, real HP, XP, items, abilities. Phase 6E2 |
-| Data Layer | ✅ Done | 30 champs + full abilities, 23 items, 45 players, career stats, G.stats — Phase 6E1 |
-| Map Visualization | ✅ Done | SVG map reads live simulation positions from events. Phase 6E4 |
-| Playback Controls | ✅ Done | ⏸ 1×/2×/4×/8× speed + pause/resume. Phase 6E3 |
-| Draft System | ✅ Done | Smart ban/pick + class counters + UI — Phase 5 |
-| Finances / Fans | ✅ Done | Weekly wages/income, finance log history, fan changes on match result — Phase 6 |
-| Training System | ✅ Done | 5 choices (rest/scrimmage/soloqueue/filmstudy/streaming), squad condition panel — Phase 6 |
-| Player Development | ✅ Done | Young players gain, veterans decline weekly — Phase 6 |
-| Series Format | ✅ Done | BO3 regular season, BO5 playoffs, between-game tactics — Phase 7 |
-| Save / Load | ✅ Done | localStorage auto-save + continue career — Phase 7 |
-| Multi-season | ✅ Done | Offseason → new season, player aging — Phase 7 |
-| Playoffs | ✅ Done | Top 4, BO5 semis + final, champion news — Phase 7 |
+**TAG = The Ancient Grove** (our custom MOBA) · Phases 1–9 + 11 complete.
 
-**TAG = The Ancient Grove** (our custom MOBA)
+### What's left to do
+
+| Area | Notes |
+|---|---|
+| Balance & Polish (Phase 8) | Meta system, UI polish, playtesting — not started |
+| Visual Identity (Phase 10) | Pixel-art sprites on map; long-term: isometric PixiJS view |
+| Scouting depth | Scout pool is small; scouting UX could use more depth |
+| AI manager behaviour | CPU teams don't use staff/facilities/tactics — purely sim-driven |
+| Contract negotiations | Players can't counter-offer or walk away; no bidding wars |
+| Transfer market | No AI-to-AI transfers between seasons |
+| Fan events cooldown UX | No in-game calendar showing upcoming event availability |
+| Gaming House | Deferred in Phase 9 — team housing bonuses not built yet |
 
 ---
 
