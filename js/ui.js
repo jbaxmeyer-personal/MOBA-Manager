@@ -883,17 +883,23 @@ function initLiveStats(draft, blueName, redName) {
       const champName  = typeof p === 'string' ? p : (p.champion || '');
       const playerName = typeof p === 'string' ? '' : (p.player?.name || '');
       const pos = typeof p === 'string' ? POSITIONS[i] : (p.pos || POSITIONS[i]);
-      return `<div class="lsp-row" id="lsp-${side[0]}-${pos || i}">
-        <span class="lsp-pos">${posIcon(pos || POSITIONS[i])}</span>
-        <div class="lsp-info">
-          <div class="lsp-name">${_escHtml(playerName || champName)}</div>
-          <div class="lsp-champ">${_escHtml(champName)}</div>
-          <div class="lsp-items" id="lsp-items-${side[0]}-${pos || i}"></div>
+      const pfx = side[0];
+      return `<div class="lsp-row" id="lsp-${pfx}-${pos}">
+        <div class="lsp-row-top">
+          <span class="lsp-pos">${posIcon(pos)}</span>
+          <div class="lsp-info">
+            <div class="lsp-level" id="lsp-lv-${pfx}-${pos}">Lv.1</div>
+            <div class="lsp-name">${_escHtml(playerName || champName)}</div>
+            <div class="lsp-champ">${_escHtml(champName)}</div>
+          </div>
+          <div class="lsp-gold" id="lsp-gold-${pfx}-${pos}">0g</div>
         </div>
-        <div class="lsp-right">
-          <div class="lsp-level" id="lsp-lv-${side[0]}-${pos || i}">Lv.1</div>
-          <div class="lsp-kda" id="lsp-kda-${side[0]}-${pos || i}">0/0/0</div>
-          <div class="lsp-gold" id="lsp-gold-${side[0]}-${pos || i}">0g</div>
+        <div class="lsp-hp-bar-wrap">
+          <div class="lsp-hp-bar" id="lsp-hp-${pfx}-${pos}"></div>
+        </div>
+        <div class="lsp-row-bottom">
+          <div class="lsp-kda" id="lsp-kda-${pfx}-${pos}">0/0/0</div>
+          <div class="lsp-items" id="lsp-items-${pfx}-${pos}"></div>
         </div>
       </div>`;
     }).join('');
@@ -928,6 +934,16 @@ function updateLiveStats(agentStats) {
           const abbr = name.split(' ').map(w=>w[0]).join('').slice(0,3).toUpperCase();
           return `<span class="lsp-item" title="${_escHtml(name)}">${abbr}</span>`;
         }).join('');
+      }
+      // HP bar
+      const hpEl = document.getElementById(`lsp-hp-${pfx}-${pos}`);
+      if (hpEl && s.hp !== undefined && s.maxHp) {
+        const pct = Math.max(0, Math.min(1, s.hp / s.maxHp));
+        hpEl.style.width = (pct * 100).toFixed(1) + '%';
+        hpEl.classList.toggle('hp-yellow', pct < 0.6 && pct >= 0.3);
+        hpEl.classList.toggle('hp-red',    pct < 0.3);
+        hpEl.classList.remove(pct >= 0.6 ? 'hp-yellow' : '', pct >= 0.3 ? 'hp-red' : '');
+        if (pct >= 0.6) { hpEl.classList.remove('hp-yellow','hp-red'); }
       }
     });
   });

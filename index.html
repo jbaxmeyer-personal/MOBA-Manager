@@ -225,7 +225,14 @@
 
   <!-- PBP -->
   <div id="pbp-container" class="pbp-container" style="display:none">
-    <div class="pbp-body-wrap">
+    <div class="pbp-main">
+      <!-- Blue stats panel (left) -->
+      <div class="pbp-side-panel pbp-side-blue">
+        <div class="lsp-panel-header" id="lsp-blue-label" style="color:#4fc3f7">Blue</div>
+        <div id="lsp-blue-rows"></div>
+      </div>
+      <!-- Map center -->
+      <div class="pbp-center">
       <div class="pbp-map-wrap">
         <svg id="pbp-map-svg" class="pbp-map-svg" viewBox="0 0 300 300">
           <!-- ── Background ──────────────────────────────────────────────────── -->
@@ -429,28 +436,27 @@
         </div>
         <div class="gold-chart-wrap">
           <div class="gold-chart-label">Gold Lead</div>
-          <svg id="gold-chart-svg" class="gold-chart-svg" height="64"></svg>
+          <svg id="gold-chart-svg" class="gold-chart-svg" height="40"></svg>
           <div id="gold-totals" class="gold-totals" style="display:none"></div>
         </div>
-      </div>
-      <!-- Live Stats Panel -->
-      <div class="pbp-live-stats" id="pbp-live-stats">
-        <div class="lsp-header" id="lsp-blue-label" style="color:#4fc3f7">Blue</div>
-        <div id="lsp-blue-rows"></div>
-        <div class="lsp-divider"></div>
-        <div class="lsp-header" id="lsp-red-label" style="color:#ff7b7b">Red</div>
+      </div><!-- end pbp-map-wrap -->
+      </div><!-- end pbp-center -->
+      <!-- Red stats panel (right) -->
+      <div class="pbp-side-panel pbp-side-red">
+        <div class="lsp-panel-header" id="lsp-red-label" style="color:#ff7b7b">Red</div>
         <div id="lsp-red-rows"></div>
       </div>
-      <div class="pbp-feed-wrap">
-        <div class="pbp-controls" id="pbp-controls">
-          <button class="pbp-speed-btn" id="pbp-btn-pause" onclick="pbpPause()"   title="Pause">⏸</button>
-          <button class="pbp-speed-btn pbp-speed-active" id="pbp-btn-1x" onclick="pbpSpeed(1)"  title="1× speed">1×</button>
-          <button class="pbp-speed-btn" id="pbp-btn-2x" onclick="pbpSpeed(2)"  title="2× speed">2×</button>
-          <button class="pbp-speed-btn" id="pbp-btn-4x" onclick="pbpSpeed(4)"  title="4× speed">4×</button>
-          <button class="pbp-speed-btn" id="pbp-btn-8x" onclick="pbpSpeed(8)"  title="8× speed">8×</button>
-        </div>
-        <div id="pbp-events" class="pbp-events"></div>
+    </div><!-- end pbp-main -->
+    <!-- Bottom: controls + event feed -->
+    <div class="pbp-bottom">
+      <div class="pbp-controls" id="pbp-controls">
+        <button class="pbp-speed-btn" id="pbp-btn-pause" onclick="pbpPause()"   title="Pause">⏸</button>
+        <button class="pbp-speed-btn pbp-speed-active" id="pbp-btn-1x" onclick="pbpSpeed(1)"  title="1× speed">1×</button>
+        <button class="pbp-speed-btn" id="pbp-btn-2x" onclick="pbpSpeed(2)"  title="2× speed">2×</button>
+        <button class="pbp-speed-btn" id="pbp-btn-4x" onclick="pbpSpeed(4)"  title="4× speed">4×</button>
+        <button class="pbp-speed-btn" id="pbp-btn-8x" onclick="pbpSpeed(8)"  title="8× speed">8×</button>
       </div>
+      <div id="pbp-events" class="pbp-events"></div>
     </div>
     <div id="pbp-results" class="pbp-results" style="display:none"></div>
   </div>
