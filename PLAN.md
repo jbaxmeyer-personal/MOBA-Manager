@@ -14,7 +14,7 @@
 |---|---|
 | Balance & Polish (Phase 8) | Meta system, UI polish, playtesting — not started |
 | Visual Identity (Phase 10) | Pixel-art sprites on map; long-term: isometric PixiJS view |
-| Phase 12A — Scouting Depth | Expand scout pool, multi-scout, regional prospects, UX overhaul |
+| ~~Phase 12A — Scouting Depth~~ | ✅ DONE |
 | Phase 12B — AI Manager Behaviour | CPU facilities, virtual staff, tactical adaptation, offseason roster moves |
 | Phase 12C — Contract Negotiations | Counter-offers, player rejection, bidding wars |
 | Phase 12D — Transfer Market | Transfer fees, CPU team transactions, transfer listing, loans |
@@ -1001,7 +1001,7 @@ G.teams[humanTeamId].tactics = {
 
 ---
 
-### 12A — Scouting Depth
+### 12A — Scouting Depth ✅ DONE
 
 **Problem:** The scout pool has 5 prospects and scouting is a one-click wait. It feels like a timer, not a discovery.
 

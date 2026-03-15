@@ -525,78 +525,126 @@ const STAFF_ROLES_ORDER = ['headcoach', 'analyst', 'marketing', 'mental', 'scout
 // ─── Scout Pool ───────────────────────────────────────────────────────────────
 
 const SCOUT_POOL = [
-  { id:'sc001', name:'Fernwick',  position:'top',       age:19, nationality:'EU', potential:'high',
+  { id:'sc001', name:'Fernwick',  position:'top',       age:19, nationality:'EU', potential:'high',   region:'EU Academy',     visibility:'rumored',
     champions:['Bogveil','Thornwall','Stoneguard'],
     contract:{ salary:45000, yearsLeft:1, expiryYear:2027 },
     stats:{ mechanics:11,csAccuracy:9,teamfightPositioning:12,mapMovement:10,objectiveExecution:10,championPoolDepth:8,
             decisionMaking:10,gameSense:11,communication:9,leadership:8,adaptability:12,composure:9 },
     personality:'grinder', playStyle:'utility', teamId:null, discovered:false },
-  { id:'sc002', name:'Ashblaze',  position:'mid',        age:20, nationality:'NA', potential:'medium',
+  { id:'sc002', name:'Ashblaze',  position:'mid',       age:20, nationality:'NA', potential:'medium', region:'NA Challenger',  visibility:'known',
     champions:['Wraithfern','Bombspore','Vaulthorn'],
     contract:{ salary:40000, yearsLeft:1, expiryYear:2027 },
     stats:{ mechanics:12,csAccuracy:13,teamfightPositioning:10,mapMovement:9,objectiveExecution:9,championPoolDepth:10,
             decisionMaking:12,gameSense:11,communication:8,leadership:7,adaptability:11,composure:10 },
     personality:'volatile', playStyle:'carry', teamId:null, discovered:false },
-  { id:'sc003', name:'Coldpath',  position:'jungle',    age:18, nationality:'KOR', potential:'high',
+  { id:'sc003', name:'Coldpath',  position:'jungle',    age:18, nationality:'KOR', potential:'high',  region:'KR Challenger',  visibility:'rumored',
     champions:['Shade','Hexwing','Fangwhisper'],
     contract:{ salary:35000, yearsLeft:1, expiryYear:2027 },
     stats:{ mechanics:13,csAccuracy:10,teamfightPositioning:10,mapMovement:14,objectiveExecution:11,championPoolDepth:9,
             decisionMaking:11,gameSense:12,communication:7,leadership:6,adaptability:13,composure:10 },
     personality:'maverick', playStyle:'aggressive', teamId:null, discovered:false },
-  { id:'sc004', name:'Driftmere', position:'adc',       age:21, nationality:'NA', potential:'medium',
+  { id:'sc004', name:'Driftmere', position:'adc',       age:21, nationality:'NA', potential:'medium', region:'NA Challenger',  visibility:'known',
     champions:['Wildshot','Swiftarrow','Starshot'],
     contract:{ salary:50000, yearsLeft:1, expiryYear:2027 },
     stats:{ mechanics:11,csAccuracy:13,teamfightPositioning:11,mapMovement:9,objectiveExecution:10,championPoolDepth:10,
             decisionMaking:10,gameSense:10,communication:9,leadership:8,adaptability:10,composure:11 },
     personality:'pro', playStyle:'carry', teamId:null, discovered:false },
-  { id:'sc005', name:'Groveborn', position:'support',   age:22, nationality:'EU', potential:'medium',
+  { id:'sc005', name:'Groveborn', position:'support',   age:22, nationality:'EU', potential:'medium', region:'EU Academy',     visibility:'known',
     champions:['Darkblossom','Irongrasp','Stonewall'],
     contract:{ salary:42000, yearsLeft:1, expiryYear:2027 },
     stats:{ mechanics:9,csAccuracy:7,teamfightPositioning:13,mapMovement:8,objectiveExecution:11,championPoolDepth:9,
             decisionMaking:12,gameSense:13,communication:14,leadership:12,adaptability:10,composure:11 },
     personality:'leader', playStyle:'utility', teamId:null, discovered:false },
-  { id:'sc006', name:'Thistlerun',position:'top',       age:20, nationality:'NA', potential:'medium',
+  { id:'sc006', name:'Thistlerun',position:'top',       age:20, nationality:'NA', potential:'medium', region:'NA Challenger',  visibility:'rumored',
     champions:['Deeproot','Ironsong','Stormhide'],
     contract:{ salary:38000, yearsLeft:1, expiryYear:2027 },
     stats:{ mechanics:10,csAccuracy:8,teamfightPositioning:11,mapMovement:9,objectiveExecution:9,championPoolDepth:8,
             decisionMaking:9,gameSense:10,communication:10,leadership:9,adaptability:11,composure:10 },
     personality:'grinder', playStyle:'utility', teamId:null, discovered:false },
-  { id:'sc007', name:'Ravenmoss', position:'mid',       age:19, nationality:'KOR', potential:'high',
+  { id:'sc007', name:'Ravenmoss', position:'mid',       age:19, nationality:'KOR', potential:'high',  region:'KR Challenger',  visibility:'hidden',
     champions:['Emberpyre','Spiritfox','Iceveil'],
     contract:{ salary:32000, yearsLeft:1, expiryYear:2027 },
     stats:{ mechanics:14,csAccuracy:12,teamfightPositioning:9,mapMovement:10,objectiveExecution:8,championPoolDepth:11,
             decisionMaking:13,gameSense:12,communication:7,leadership:6,adaptability:14,composure:9 },
     personality:'maverick', playStyle:'carry', teamId:null, discovered:false },
-  { id:'sc008', name:'Stormcroft',position:'adc',       age:18, nationality:'EU', potential:'high',
+  { id:'sc008', name:'Stormcroft',position:'adc',       age:18, nationality:'EU', potential:'high',  region:'EU Academy',     visibility:'hidden',
     champions:['Duskwarden','Embervane','Wildshot'],
     contract:{ salary:30000, yearsLeft:1, expiryYear:2027 },
     stats:{ mechanics:12,csAccuracy:14,teamfightPositioning:10,mapMovement:8,objectiveExecution:9,championPoolDepth:8,
             decisionMaking:10,gameSense:11,communication:8,leadership:7,adaptability:12,composure:10 },
     personality:'grinder', playStyle:'carry', teamId:null, discovered:false },
-  { id:'sc009', name:'Willowfen', position:'support',   age:23, nationality:'NA', potential:'medium',
+  { id:'sc009', name:'Willowfen', position:'support',   age:23, nationality:'NA', potential:'medium', region:'NA Challenger',  visibility:'known',
     champions:['Tidecaller','Gravewarden','Darkblossom'],
     contract:{ salary:48000, yearsLeft:1, expiryYear:2027 },
     stats:{ mechanics:8,csAccuracy:7,teamfightPositioning:12,mapMovement:9,objectiveExecution:11,championPoolDepth:10,
             decisionMaking:13,gameSense:14,communication:15,leadership:13,adaptability:9,composure:12 },
     personality:'leader', playStyle:'shotcaller', teamId:null, discovered:false },
-  { id:'sc010', name:'Ironveil',  position:'jungle',    age:21, nationality:'KOR', potential:'medium',
+  { id:'sc010', name:'Ironveil',  position:'jungle',    age:21, nationality:'KOR', potential:'medium', region:'KR Challenger',  visibility:'rumored',
     champions:['Driftblade','Shade','Hexwing'],
     contract:{ salary:44000, yearsLeft:1, expiryYear:2027 },
     stats:{ mechanics:12,csAccuracy:9,teamfightPositioning:11,mapMovement:13,objectiveExecution:10,championPoolDepth:9,
             decisionMaking:11,gameSense:12,communication:8,leadership:7,adaptability:11,composure:10 },
     personality:'pro', playStyle:'aggressive', teamId:null, discovered:false },
-  { id:'sc011', name:'Briarcoil', position:'top',       age:17, nationality:'EU', potential:'high',
+  { id:'sc011', name:'Briarcoil', position:'top',       age:17, nationality:'EU', potential:'high',  region:'EU Academy',     visibility:'hidden',
     champions:['Thornback','Sylvara','Briarvex'],
     contract:{ salary:28000, yearsLeft:1, expiryYear:2027 },
     stats:{ mechanics:10,csAccuracy:7,teamfightPositioning:10,mapMovement:8,objectiveExecution:8,championPoolDepth:7,
             decisionMaking:9,gameSense:9,communication:8,leadership:7,adaptability:13,composure:8 },
     personality:'grinder', playStyle:'utility', teamId:null, discovered:false },
-  { id:'sc012', name:'Cinderfall',position:'mid',       age:24, nationality:'NA', potential:'medium',
+  { id:'sc012', name:'Cinderfall',position:'mid',       age:24, nationality:'NA', potential:'medium', region:'NA Challenger',  visibility:'known',
     champions:['Vaulthorn','Bombspore','Wraithfern'],
     contract:{ salary:55000, yearsLeft:1, expiryYear:2027 },
     stats:{ mechanics:11,csAccuracy:12,teamfightPositioning:10,mapMovement:8,objectiveExecution:9,championPoolDepth:11,
             decisionMaking:12,gameSense:11,communication:10,leadership:9,adaptability:10,composure:12 },
     personality:'pro', playStyle:'utility', teamId:null, discovered:false },
+  { id:'sc013', name:'Vexaro',    position:'top',       age:20, nationality:'LATAM', potential:'medium', region:'LATAM Open',    visibility:'known',
+    champions:['Stoneguard','Thornback','Deeproot'],
+    contract:{ salary:30000, yearsLeft:1, expiryYear:2027 },
+    stats:{ mechanics:11,csAccuracy:9,teamfightPositioning:10,mapMovement:11,objectiveExecution:10,championPoolDepth:9,
+            decisionMaking:10,gameSense:10,communication:11,leadership:10,adaptability:12,composure:9 },
+    personality:'grinder', playStyle:'utility', teamId:null, discovered:false },
+  { id:'sc014', name:'Seraphis',  position:'support',   age:19, nationality:'SEA', potential:'high',   region:'SEA Circuit',   visibility:'rumored',
+    champions:['Tidecaller','Darkblossom','Irongrasp'],
+    contract:{ salary:28000, yearsLeft:1, expiryYear:2027 },
+    stats:{ mechanics:10,csAccuracy:8,teamfightPositioning:13,mapMovement:9,objectiveExecution:11,championPoolDepth:9,
+            decisionMaking:12,gameSense:13,communication:14,leadership:10,adaptability:11,composure:10 },
+    personality:'leader', playStyle:'utility', teamId:null, discovered:false },
+  { id:'sc015', name:'Oakhaven',  position:'jungle',    age:22, nationality:'NA', potential:'medium', region:'NA Challenger',  visibility:'hidden',
+    champions:['Fangwhisper','Hexwing','Driftblade'],
+    contract:{ salary:36000, yearsLeft:1, expiryYear:2027 },
+    stats:{ mechanics:11,csAccuracy:10,teamfightPositioning:11,mapMovement:13,objectiveExecution:11,championPoolDepth:8,
+            decisionMaking:10,gameSense:11,communication:9,leadership:8,adaptability:10,composure:11 },
+    personality:'pro', playStyle:'aggressive', teamId:null, discovered:false },
+  { id:'sc016', name:'Miravel',   position:'mid',       age:17, nationality:'KOR', potential:'high',  region:'KR Challenger',  visibility:'hidden',
+    champions:['Spiritfox','Emberpyre','Iceveil'],
+    contract:{ salary:22000, yearsLeft:1, expiryYear:2027 },
+    stats:{ mechanics:15,csAccuracy:13,teamfightPositioning:10,mapMovement:11,objectiveExecution:9,championPoolDepth:10,
+            decisionMaking:12,gameSense:13,communication:7,leadership:5,adaptability:14,composure:9 },
+    personality:'maverick', playStyle:'carry', teamId:null, discovered:false },
+  { id:'sc017', name:'Dusthallow', position:'adc',      age:21, nationality:'EU', potential:'medium', region:'EU Academy',     visibility:'known',
+    champions:['Wildshot','Embervane','Swiftarrow'],
+    contract:{ salary:40000, yearsLeft:1, expiryYear:2027 },
+    stats:{ mechanics:11,csAccuracy:13,teamfightPositioning:11,mapMovement:9,objectiveExecution:10,championPoolDepth:10,
+            decisionMaking:11,gameSense:11,communication:9,leadership:8,adaptability:10,composure:11 },
+    personality:'pro', playStyle:'carry', teamId:null, discovered:false },
+  { id:'sc018', name:'Silkfold',  position:'support',   age:20, nationality:'EU', potential:'medium', region:'EU Academy',     visibility:'rumored',
+    champions:['Gravewarden','Stonewall','Darkblossom'],
+    contract:{ salary:32000, yearsLeft:1, expiryYear:2027 },
+    stats:{ mechanics:9,csAccuracy:7,teamfightPositioning:12,mapMovement:8,objectiveExecution:10,championPoolDepth:8,
+            decisionMaking:11,gameSense:12,communication:13,leadership:11,adaptability:9,composure:10 },
+    personality:'leader', playStyle:'utility', teamId:null, discovered:false },
+  { id:'sc019', name:'Longwei',   position:'mid',       age:18, nationality:'CN', potential:'high',   region:'CN Academy',    visibility:'hidden',
+    champions:['Wraithfern','Vaulthorn','Bombspore'],
+    contract:{ salary:26000, yearsLeft:1, expiryYear:2027 },
+    stats:{ mechanics:14,csAccuracy:12,teamfightPositioning:11,mapMovement:10,objectiveExecution:10,championPoolDepth:11,
+            decisionMaking:13,gameSense:12,communication:8,leadership:7,adaptability:13,composure:10 },
+    personality:'grinder', playStyle:'carry', teamId:null, discovered:false },
+  { id:'sc020', name:'Brackwell', position:'jungle',    age:19, nationality:'NA', potential:'medium', region:'NA Challenger',  visibility:'known',
+    champions:['Shade','Hexwing','Fangwhisper'],
+    contract:{ salary:34000, yearsLeft:1, expiryYear:2027 },
+    stats:{ mechanics:11,csAccuracy:9,teamfightPositioning:10,mapMovement:12,objectiveExecution:11,championPoolDepth:9,
+            decisionMaking:11,gameSense:11,communication:9,leadership:8,adaptability:12,composure:10 },
+    personality:'grinder', playStyle:'aggressive', teamId:null, discovered:false },
 ];
 
 // ─── Game State ───────────────────────────────────────────────────────────────
@@ -697,7 +745,7 @@ function initGame(humanTeamId) {
     financeLog:     [],        // [{ week, wages, income, net, balance }]
     fanMilestones:  { m100k: false, m250k: false, m500k: false, m1m: false, m2m: false },
     coStreamDeals:  { available: [], active: [] },
-    scouting:       { weeklyBudget: 50000, activeScout: null, reports: [], discovered: [] },
+    scouting:       { weeklyBudget: 50000, activeScouts: [], reports: [], discovered: [] },
     staff:          [],   // array of hired staff objects { ...STAFF_POOL entry, hiredWeek }
     manager:        { xp: 0, lastLevel: 1, traits: [] },
   };
@@ -848,24 +896,31 @@ function advanceWeek() {
   // Advance facility build queues
   advanceFacilityBuilds(G.humanTeamId);
 
-  // Process scouting
-  if (G.scouting && G.scouting.activeScout) {
-    G.scouting.activeScout.weeksLeft--;
-    if (G.scouting.activeScout.weeksLeft <= 0) {
-      const found = SCOUT_POOL.find(p => p.id === G.scouting.activeScout.targetId);
-      if (found) {
-        found.discovered = true;
-        G.scouting.discovered.push(found.id);
-        G.scouting.reports.push({ ...found, discoveredWeek: G.season.week });
-        // Add to free agents
-        if (!G.players[found.id]) {
-          G.players[found.id] = { ...found, morale: 6, form: makeForm(6), career: { gamesPlayed:0,wins:0,losses:0,kills:0,deaths:0,assists:0,cs:0,damageDealt:0,championStats:{} } };
-          G.freeAgents.push(found.id);
-        }
-        addNews(`Scout report: ${found.name} (${posLabel(found.position)}, Age ${found.age}, ${found.potential} potential) is available as a free agent.`, 'info');
-      }
+  // Process scouting (multi-slot)
+  if (G.scouting) {
+    // Normalize old single-scout format
+    if (!G.scouting.activeScouts) {
+      G.scouting.activeScouts = G.scouting.activeScout ? [G.scouting.activeScout] : [];
       G.scouting.activeScout = null;
     }
+    G.scouting.activeScouts = G.scouting.activeScouts.filter(as => {
+      as.weeksLeft--;
+      if (as.weeksLeft <= 0) {
+        const found = SCOUT_POOL.find(p => p.id === as.targetId);
+        if (found) {
+          found.discovered = true;
+          G.scouting.discovered.push(found.id);
+          G.scouting.reports.push({ ...found, discoveredWeek: G.season.week });
+          if (!G.players[found.id]) {
+            G.players[found.id] = { ...found, morale: 6, form: makeForm(6), career: { gamesPlayed:0,wins:0,losses:0,kills:0,deaths:0,assists:0,cs:0,damageDealt:0,championStats:{} } };
+            G.freeAgents.push(found.id);
+          }
+          addNews(`Scout report: ${found.name} (${posLabel(found.position)}, Age ${found.age}, ${found.potential} potential) is available as a free agent.`, 'info');
+        }
+        return false; // remove completed assignment
+      }
+      return true;
+    });
   }
 
   // Player development tick (every week, minor)
@@ -1345,15 +1400,43 @@ function _checkFanMilestones(teamId) {
 
 // ─── Scouting ────────────────────────────────────────────────────────────────
 
-function startScouting() {
+function _scoutSlotCount() {
+  const scout = (G.staff || []).find(s => s.role === 'scout');
+  return scout && (scout.attrs?.networkReach || 0) >= 14 ? 2 : 1;
+}
+
+function _scoutCostAndWeeks() {
+  const scout = (G.staff || []).find(s => s.role === 'scout');
+  const facDiscount = getFacilityBonus(G.humanTeamId, 'recruitment'); // 0 / 0.25 / 0.5
+  let cost  = 50000;
+  let weeks = 3;
+  if (scout) {
+    const speed   = scout.attrs?.speed          || 10;
+    const costEff = scout.attrs?.costEfficiency || 10;
+    weeks = Math.max(1, 3 - Math.floor(speed / 7));
+    cost  = Math.round(50000 * Math.max(0.5, 1 - costEff / 40));
+  }
+  cost = Math.round(cost * (1 - facDiscount));
+  return { cost, weeks };
+}
+
+function startScouting(prospectId) {
   if (!G || !G.scouting) return 'error';
-  if (G.scouting.activeScout) return 'already_active';
-  const undiscovered = SCOUT_POOL.filter(p => !p.discovered && !G.scouting.discovered.includes(p.id));
-  if (!undiscovered.length) return 'none_left';
-  const cost = 50000;
+  // Normalize old format
+  if (!G.scouting.activeScouts) {
+    G.scouting.activeScouts = G.scouting.activeScout ? [G.scouting.activeScout] : [];
+    G.scouting.activeScout = null;
+  }
+  const maxSlots = _scoutSlotCount();
+  if (G.scouting.activeScouts.length >= maxSlots) return 'already_active';
+  if (G.scouting.activeScouts.some(a => a.targetId === prospectId)) return 'already_active';
+  const prospect = SCOUT_POOL.find(p => p.id === prospectId);
+  if (!prospect) return 'error';
+  if (prospect.discovered || G.scouting.discovered.includes(prospectId)) return 'already_discovered';
+  const { cost, weeks } = _scoutCostAndWeeks();
   if (G.teams[G.humanTeamId].budget < cost) return 'no_budget';
   G.teams[G.humanTeamId].budget -= cost;
-  G.scouting.activeScout = { targetId: undiscovered[Math.floor(Math.random() * undiscovered.length)].id, weeksLeft: 1 };
+  G.scouting.activeScouts.push({ targetId: prospectId, weeksLeft: weeks, weeksTotal: weeks });
   return 'started';
 }
 

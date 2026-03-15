@@ -1042,35 +1042,115 @@ function renderDraftSynergies(draft) {
 function renderScouting() {
   if (!G) return;
   const sc = G.scouting || {};
-  const discovered = (sc.discovered || []).map(id => G.players[id]).filter(Boolean);
+  // Normalize old format in-place for UI
+  if (!sc.activeScouts) sc.activeScouts = sc.activeScout ? [sc.activeScout] : [];
   const team = G.teams[G.humanTeamId];
+  const scout = (G.staff || []).find(s => s.role === 'scout');
+  const maxSlots = scout && (scout.attrs?.networkReach || 0) >= 14 ? 2 : 1;
+  const { cost: scoutCost, weeks: scoutWeeks } = _scoutCostAndWeeks();
 
-  // Active scout status
-  let scoutStatus = '';
-  if (sc.activeScout) {
-    scoutStatus = `<div class="scout-active">Scout in the field — report in ${sc.activeScout.weeksLeft} week(s).</div>`;
+  // ─── Scout Staff Card ────────────────────────────────────────────────────
+  let staffHtml = '';
+  if (scout) {
+    const ovr = _staffOverall(scout.attrs);
+    const attrBars = Object.entries(scout.attrs).map(([k, v]) =>
+      `<span class="ssc-attr"><span class="ssc-attr-label">${STAFF_ROLE_ATTR_LABELS[k] || k}</span> <strong>${v}</strong></span>`
+    ).join('');
+    staffHtml = `<div class="scout-staff-card">
+      <div class="ssc-name">${_escHtml(scout.name)} <span class="ovr-badge ${overallColor(ovr)}">${ovr}</span></div>
+      <div class="ssc-attrs">${attrBars}</div>
+      <div class="ssc-info">
+        Slots: <strong>${sc.activeScouts.length}/${maxSlots}</strong> active &nbsp;·&nbsp;
+        Report time: <strong>${scoutWeeks} wk${scoutWeeks > 1 ? 's' : ''}</strong> &nbsp;·&nbsp;
+        Cost: <strong>$${(scoutCost / 1000).toFixed(0)}K per assignment</strong>
+      </div>
+    </div>`;
   } else {
-    const canScout = team.budget >= 50000;
-    const remaining = SCOUT_POOL.filter(p => !p.discovered && !(sc.discovered||[]).includes(p.id)).length;
-    scoutStatus = remaining > 0
-      ? `<div class="scout-idle">
-           <p>${remaining} undiscovered prospect(s) in the challenger ladder.</p>
-           <button class="btn-primary" onclick="onStartScouting()" ${canScout ? '' : 'disabled'}>
-             Send Scout ($50K)
-           </button>
-           ${!canScout ? '<p class="scout-warn">Insufficient budget.</p>' : ''}
-         </div>`
-      : '<div class="scout-idle"><p>All prospects have been scouted.</p></div>';
+    staffHtml = `<div class="scout-staff-card scout-no-staff">
+      <p><strong>No Scout hired.</strong> Hire a Scout from the Staff screen to speed up assignments, reduce costs, and unlock a second scouting slot (networkReach ≥ 14).</p>
+      <div class="ssc-info">Slots: <strong>1</strong> &nbsp;·&nbsp; Speed: <strong>3 weeks</strong> &nbsp;·&nbsp; Cost: <strong>$50K</strong></div>
+    </div>`;
   }
 
-  // Discovered players
-  let discoveredHtml = '';
+  // ─── Active Assignments ──────────────────────────────────────────────────
+  let activeHtml = '';
+  if (sc.activeScouts.length > 0) {
+    activeHtml = `<div class="scout-section">
+      <h3>Active Assignments</h3>
+      ${sc.activeScouts.map(as => {
+        const p = SCOUT_POOL.find(x => x.id === as.targetId);
+        const total = as.weeksTotal || scoutWeeks;
+        const done = total - as.weeksLeft;
+        const pct = Math.round((done / total) * 100);
+        const displayName = p ? (p.visibility === 'hidden' ? '???' : _escHtml(p.name)) : 'Unknown';
+        const displayPos  = p ? posIcon(p.position) : '?';
+        const region = p?.region || '?';
+        return `<div class="scout-assignment">
+          <span class="sa-pos">${displayPos}</span>
+          <span class="sa-name">${displayName}</span>
+          <span class="sa-region">${_escHtml(region)}</span>
+          <div class="sa-progress-wrap"><div class="sa-progress-bar" style="width:${pct}%"></div></div>
+          <span class="sa-weeks">${as.weeksLeft} wk${as.weeksLeft !== 1 ? 's' : ''} left</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  // ─── Prospect Pool ───────────────────────────────────────────────────────
+  const undiscovered = SCOUT_POOL.filter(p =>
+    !p.discovered &&
+    !(sc.discovered || []).includes(p.id) &&
+    !sc.activeScouts.some(a => a.targetId === p.id)
+  );
+  let prospectsHtml = '';
+  if (undiscovered.length > 0) {
+    const canScout = team.budget >= scoutCost && sc.activeScouts.length < maxSlots;
+    const cards = undiscovered.map(p => {
+      const vis = p.visibility || 'known';
+      let nameHtml, detailHtml;
+      if (vis === 'hidden') {
+        nameHtml  = `<span class="sp-name sp-hidden">??? Prospect</span>`;
+        detailHtml = `<span class="sp-region">${_escHtml(p.region || 'Unknown')}</span> <span class="sp-pos">${posIcon(p.position)}</span>`;
+      } else if (vis === 'rumored') {
+        nameHtml  = `<span class="sp-name sp-rumored">[Rumored ${posLabel(p.position)}]</span>`;
+        detailHtml = `<span class="sp-region">${_escHtml(p.region || '?')}</span> <span class="sp-age">~${p.age}y</span> <span class="sp-pot pot-${p.potential}">${p.potential}</span>`;
+      } else {
+        const ovr = calcOverall(p);
+        nameHtml  = `<span class="sp-name">${_escHtml(p.name)}</span> <span class="ovr-badge ${overallColor(ovr)}">${ovr}</span>`;
+        detailHtml = `<span class="sp-region">${_escHtml(p.region || '?')}</span> <span class="sp-pos">${posIcon(p.position)}</span> <span class="sp-age">Age ${p.age}</span> <span class="sp-nat">${p.nationality}</span> <span class="sp-pot pot-${p.potential}">${p.potential}</span>`;
+      }
+      return `<div class="prospect-card prospect-${vis}">
+        <div class="pc-header">${nameHtml}</div>
+        <div class="pc-detail">${detailHtml}</div>
+        <button class="btn-sm btn-primary pc-scout-btn" onclick="onStartScouting('${p.id}')" ${canScout ? '' : 'disabled'}>
+          Scout ($${(scoutCost / 1000).toFixed(0)}K · ${scoutWeeks}wk)
+        </button>
+      </div>`;
+    }).join('');
+    const warnHtml = !canScout
+      ? (team.budget < scoutCost
+          ? `<p class="scout-warn">Insufficient budget ($${fmtMoney(team.budget)} / $${fmtMoney(scoutCost)} needed).</p>`
+          : `<p class="scout-warn">All ${maxSlots} scout slot(s) occupied.</p>`)
+      : '';
+    prospectsHtml = `<div class="scout-section">
+      <h3>Prospect Pool <span class="scout-budget-note">Budget: $${fmtMoney(team.budget)}</span></h3>
+      <div class="prospect-grid">${cards}</div>
+      ${warnHtml}
+    </div>`;
+  } else if (undiscovered.length === 0 && sc.activeScouts.length === 0) {
+    prospectsHtml = `<div class="scout-section"><p class="scout-idle">All prospects scouted or already in the reports archive.</p></div>`;
+  }
+
+  // ─── Reports Archive ─────────────────────────────────────────────────────
+  const discovered = (sc.discovered || []).map(id => G.players[id]).filter(Boolean);
+  let reportsHtml = '';
   if (discovered.length) {
-    discoveredHtml = `<div class="scout-reports">
-      <h3>Scout Reports</h3>
+    reportsHtml = `<div class="scout-section">
+      <h3>Reports Archive</h3>
       ${discovered.map(p => {
         const ovr = calcOverall(p);
         const inFA = G.freeAgents.includes(p.id);
+        const onTeam = Object.values(G.teams).find(t => t.roster.includes(p.id) || (t.academy || []).includes(p.id));
         return `<div class="scout-report-row">
           <span class="sr-pos">${posIcon(p.position)}</span>
           <span class="sr-name">${_escHtml(p.name)}</span>
@@ -1079,12 +1159,13 @@ function renderScouting() {
           <span class="sr-age">Age ${p.age}</span>
           <span class="sr-pot pot-${p.potential}">${p.potential} potential</span>
           ${inFA ? '<span class="sr-fa">Free Agent</span>' : ''}
+          ${onTeam ? `<span class="sr-team">${_escHtml(onTeam.name)}</span>` : ''}
         </div>`;
       }).join('')}
     </div>`;
   }
 
-  setHtml('scouting-content', scoutStatus + discoveredHtml);
+  setHtml('scouting-content', `<div class="scouting-layout">${staffHtml}${activeHtml}${prospectsHtml}${reportsHtml}</div>`);
 }
 
 // ─── Tactics Phase ────────────────────────────────────────────────────────────

@@ -377,13 +377,15 @@ function onNewSeason() {
 
 // ─── Scouting ────────────────────────────────────────────────────────────────
 
-function onStartScouting() {
-  const result = startScouting();
+function onStartScouting(prospectId) {
+  const result = startScouting(prospectId);
   if (result === 'started') {
-    renderAll();
-    showMain('scouting');
+    renderScouting();
+    renderFinances();
   } else if (result === 'no_budget') {
     alert('Insufficient budget to send a scout.');
+  } else if (result === 'already_active') {
+    alert('All scout slots are currently occupied.');
   }
 }
 

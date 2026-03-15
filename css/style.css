@@ -1282,7 +1282,57 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
 .sr-pot  { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px; }
 .pot-high   { background: rgba(76,175,80,.15); color: #4caf50; }
 .pot-medium { background: rgba(200,155,60,.15); color: var(--gold); }
-.sr-fa { font-size: 10px; font-weight: 700; color: #4fc3f7; }
+.sr-fa   { font-size: 10px; font-weight: 700; color: #4fc3f7; }
+.sr-team { font-size: 10px; color: var(--text-dim); }
+
+/* ── Scouting Depth (12A) ──────────────────────────────────────────────────── */
+.scouting-layout { display: flex; flex-direction: column; gap: 18px; }
+.scout-staff-card {
+  background: var(--panel2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.ssc-name { font-size: 14px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.ssc-attrs { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-bottom: 8px; }
+.ssc-attr { font-size: 12px; color: var(--text-dim); }
+.ssc-attr strong { color: var(--text); }
+.ssc-attr-label { margin-right: 4px; }
+.ssc-info { font-size: 12px; color: var(--text-dim); }
+.scout-section h3 {
+  color: var(--gold); font-size: 13px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .5px; margin: 0 0 10px;
+  display: flex; align-items: center; gap: 10px;
+}
+.scout-budget-note { font-size: 11px; color: var(--text-dim); font-weight: 400; text-transform: none; letter-spacing: 0; }
+.scout-assignment {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; background: var(--panel2);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 13px; margin-bottom: 6px;
+}
+.sa-pos    { font-size: 15px; }
+.sa-name   { font-weight: 700; min-width: 100px; }
+.sa-region { color: var(--text-dim); font-size: 11px; flex: 1; }
+.sa-progress-wrap { flex: 2; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.sa-progress-bar  { height: 100%; background: var(--gold); border-radius: 3px; transition: width .3s; }
+.sa-weeks { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+.prospect-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.prospect-card {
+  background: var(--panel2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.prospect-card.prospect-hidden  { border-color: rgba(120,120,120,.3); opacity: .7; }
+.prospect-card.prospect-rumored { border-color: rgba(200,155,60,.25); }
+.pc-header { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pc-detail { display: flex; flex-wrap: wrap; gap: 5px; font-size: 11px; }
+.pc-scout-btn { align-self: flex-start; }
+.sp-name    { font-size: 13px; font-weight: 700; }
+.sp-hidden  { color: var(--text-dim); font-style: italic; }
+.sp-rumored { color: var(--gold); font-style: italic; }
+.sp-region  { color: #4fc3f7; font-size: 10px; }
+.sp-age     { color: var(--text-dim); }
+.sp-nat     { color: var(--text-dim); }
+.sp-pot     { font-size: 10px; font-weight: 700; padding: 2px 5px; border-radius: 3px; }
 
 @media (max-width: 900px) {
   .dashboard-grid     { grid-template-columns: 1fr; }
