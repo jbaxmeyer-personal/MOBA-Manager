@@ -869,12 +869,14 @@ function showDraftChampInfo(champName) {
   };
 
   const roleMap = { top:'Top', jungle:'Jungle', mid:'Mid', adc:'ADC', support:'Support', arcanist:'Mid', vanguard:'Top', ranger:'Jungle', hunter:'ADC', warden:'Support' };
-  const roleKey = cd.role ? (roleMap[cd.role] ? (Object.keys(roleMap).find(k => roleMap[k] === roleMap[cd.role] && k.length <= 7) || cd.role) : cd.role) : '';
-  const roleDisplay = cd.role ? (roleMap[cd.role] || cd.role) : '';
   const COMP_COLORS = { ENGAGE:'#e67e22', POKE:'#3498db', PICK:'#9b59b6', PROTECT:'#27ae60', SCALING:'#c89b3c' };
   const compColor = cd.compType ? (COMP_COLORS[cd.compType] || '#888') : null;
-
-  const roleCssClass = { Top:'pos-top', Jungle:'pos-jungle', Mid:'pos-mid', ADC:'pos-adc', Support:'pos-support' }[roleDisplay] || '';
+  const roleCssMap = { Top:'pos-top', Jungle:'pos-jungle', Mid:'pos-mid', ADC:'pos-adc', Support:'pos-support' };
+  const infoRolesRaw = cd.roles || (cd.role ? [cd.role] : []);
+  const infoRoleBadges = infoRolesRaw.map((r, i) => {
+    const d = roleMap[r] || r;
+    return `<span class="pos-badge ${roleCssMap[d]||''}">${d}${i>0?' (flex)':''}</span>`;
+  }).join('');
 
   el.innerHTML = `
     <div class="dci-wrap">
@@ -883,7 +885,7 @@ function showDraftChampInfo(champName) {
           <span class="dci-name">${_escHtml(champName)}</span>
           ${b ? `<span class="class-badge" style="color:${b.color};border-color:${b.color}">${b.label}</span>` : ''}
           ${compColor ? `<span class="dci-comp" style="color:${compColor};border-color:${compColor}">${cd.compType}</span>` : ''}
-          ${roleDisplay ? `<span class="pos-badge ${roleCssClass}">${roleDisplay}</span>` : ''}
+          ${infoRoleBadges}
         </div>
         ${cd.lore ? `<div class="dci-lore">${_escHtml(cd.lore)}</div>` : ''}
         <div class="dci-stats">
@@ -1390,8 +1392,8 @@ function renderChampionBrowser() {
   const filtered = allChamps.filter(([name, cd]) => {
     if (_champFilter.cls !== 'all' && cd.class !== _champFilter.cls) return false;
     if (_champFilter.role !== 'all') {
-      const r = roleMap[cd.role] || cd.role;
-      if (r !== _champFilter.role) return false;
+      const champRoles = (cd.roles || [cd.role]).map(r => roleMap[r] || r);
+      if (!champRoles.includes(_champFilter.role)) return false;
     }
     return true;
   });
@@ -1410,8 +1412,12 @@ function renderChampionBrowser() {
     const b = CLASS_BADGE[cd.class] || CLASS_BADGE[(cd.class||'').toLowerCase()];
     const COMP_COLORS = { ENGAGE:'#e67e22', POKE:'#3498db', PICK:'#9b59b6', PROTECT:'#27ae60', SCALING:'#c89b3c' };
     const compColor = cd.compType ? (COMP_COLORS[cd.compType] || '#888') : null;
-    const roleDisplay = roleMap[cd.role] || cd.role || '';
-    const roleCss = { Top:'pos-top', Jungle:'pos-jungle', Mid:'pos-mid', ADC:'pos-adc', Support:'pos-support' }[roleDisplay] || '';
+    const champRolesRaw = cd.roles || (cd.role ? [cd.role] : []);
+    const champRoleDisplays = champRolesRaw.map(r => roleMap[r] || r);
+    const roleCssMap = { Top:'pos-top', Jungle:'pos-jungle', Mid:'pos-mid', ADC:'pos-adc', Support:'pos-support' };
+    const roleBadges = champRoleDisplays.map((r, i) =>
+      `<span class="pos-badge ${roleCssMap[r]||''}">${r}${i>0?' (flex)':''}</span>`
+    ).join('');
     const isSelected = _champSelected === name;
 
     // Career stats from all players
@@ -1427,7 +1433,7 @@ function renderChampionBrowser() {
       <div class="cb-card-badges">
         ${b ? `<span class="class-badge" style="color:${b.color};border-color:${b.color}">${b.label}</span>` : ''}
         ${compColor ? `<span class="dci-comp" style="color:${compColor};border-color:${compColor}">${cd.compType}</span>` : ''}
-        ${roleDisplay ? `<span class="pos-badge ${roleCss}">${roleDisplay}</span>` : ''}
+        ${roleBadges}
       </div>
       ${wr ? `<div class="cb-wr">${wr}</div>` : ''}
     </div>`;
@@ -1440,8 +1446,14 @@ function renderChampionBrowser() {
     const b  = CLASS_BADGE[cd.class] || CLASS_BADGE[(cd.class||'').toLowerCase()];
     const COMP_COLORS = { ENGAGE:'#e67e22', POKE:'#3498db', PICK:'#9b59b6', PROTECT:'#27ae60', SCALING:'#c89b3c' };
     const compColor = cd.compType ? (COMP_COLORS[cd.compType] || '#888') : null;
-    const roleDisplay = roleMap[cd.role] || cd.role || '';
-    const roleCss = { Top:'pos-top', Jungle:'pos-jungle', Mid:'pos-mid', ADC:'pos-adc', Support:'pos-support' }[roleDisplay] || '';
+    const detailRolesRaw = cd.roles || (cd.role ? [cd.role] : []);
+    const detailRoleMap = { top:'Top', jungle:'Jungle', mid:'Mid', adc:'ADC', support:'Support',
+                            arcanist:'Mid', vanguard:'Top', ranger:'Jungle', hunter:'ADC', warden:'Support' };
+    const detailRoleCssMap = { Top:'pos-top', Jungle:'pos-jungle', Mid:'pos-mid', ADC:'pos-adc', Support:'pos-support' };
+    const detailRoleBadges = detailRolesRaw.map((r, i) => {
+      const d = detailRoleMap[r] || r;
+      return `<span class="pos-badge ${detailRoleCssMap[d]||''}">${d}${i>0?' (flex)':''}</span>`;
+    }).join('');
 
     const stat = (label, val) => `<div class="dci-stat"><span class="dci-stat-label">${label}</span><span class="dci-stat-val">${val}</span></div>`;
     const abilityHtml = (key, icon) => {
@@ -1467,7 +1479,7 @@ function renderChampionBrowser() {
           <span class="dci-name">${_escHtml(_champSelected)}</span>
           ${b ? `<span class="class-badge" style="color:${b.color};border-color:${b.color}">${b.label}</span>` : ''}
           ${compColor ? `<span class="dci-comp" style="color:${compColor};border-color:${compColor}">${cd.compType}</span>` : ''}
-          ${roleDisplay ? `<span class="pos-badge ${roleCss}">${roleDisplay}</span>` : ''}
+          ${detailRoleBadges}
         </div>
         ${cd.lore ? `<div class="dci-lore">${_escHtml(cd.lore)}</div>` : ''}
         <div class="dci-stats">
