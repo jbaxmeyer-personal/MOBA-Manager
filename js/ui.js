@@ -102,7 +102,8 @@ function showMain(name) {
     case 'schedule':   renderSchedule(); break;
     case 'scouting':   renderScouting(); break;
     case 'news':       renderNews(); break;
-    case 'staff':      renderStaff(); break;
+    case 'staff':        renderStaff(); break;
+    case 'facilities':   renderFacilities(); break;
   }
 }
 
@@ -1090,6 +1091,67 @@ function renderScouting() {
   }
 
   setHtml('scouting-content', scoutStatus + discoveredHtml);
+}
+
+// ─── Facilities ───────────────────────────────────────────────────────────────
+
+function renderFacilities() {
+  if (!G) return;
+  const team = G.teams[G.humanTeamId];
+  if (!team.facilities) team.facilities = defaultFacilities();
+
+  const totalMaint = getFacilityMaintenanceCost(G.humanTeamId);
+
+  const cards = Object.entries(FACILITY_DEFS).map(([key, def]) => {
+    const level    = team.facilities[key] || 1;
+    const isMax    = level >= def.maxLevel;
+    const upgCost  = isMax ? 0 : def.costs[level];
+    const canAfford = !isMax && team.budget >= upgCost;
+    const pips     = Array.from({ length: def.maxLevel }, (_, i) =>
+      `<span class="fac-pip ${i < level ? 'fac-pip-on' : ''}"></span>`
+    ).join('');
+
+    return `
+      <div class="fac-card">
+        <div class="fac-card-top">
+          <span class="fac-icon">${def.icon}</span>
+          <div class="fac-info">
+            <div class="fac-name">${def.name}</div>
+            <div class="fac-desc">${def.desc}</div>
+          </div>
+        </div>
+        <div class="fac-level-row">
+          <div class="fac-pips">${pips}</div>
+          <span class="fac-level-label">Level ${level} / ${def.maxLevel}</span>
+        </div>
+        <div class="fac-bonus">${def.bonusLabel(level)}</div>
+        <div class="fac-footer">
+          <span class="fac-maint">${fmtMoney(def.weekly[level-1] || 0)}/wk upkeep</span>
+          ${isMax
+            ? '<span class="fac-maxed">MAX LEVEL</span>'
+            : `<button class="btn-primary" style="font-size:12px;padding:5px 12px"
+                onclick="onUpgradeFacility('${key}')" ${canAfford ? '' : 'disabled'}>
+                Upgrade — ${fmtMoney(upgCost)}
+              </button>`}
+        </div>
+      </div>`;
+  }).join('');
+
+  setHtml('facilities-content', `
+    <div class="fac-summary">
+      Total facility upkeep: <strong style="color:var(--loss)">${fmtMoney(totalMaint)}/wk</strong>
+      &nbsp;·&nbsp; Budget: <strong style="color:var(--gold)">${fmtMoney(team.budget)}</strong>
+    </div>
+    <div class="fac-grid">${cards}</div>
+  `);
+}
+
+function onUpgradeFacility(key) {
+  const result = upgradeFacility(key);
+  if (result === 'no_budget') { alert('Insufficient budget for this upgrade.'); return; }
+  if (result === 'max_level') { alert('Already at maximum level.'); return; }
+  renderFacilities();
+  renderTopBar();
 }
 
 // ─── Streaming ────────────────────────────────────────────────────────────────

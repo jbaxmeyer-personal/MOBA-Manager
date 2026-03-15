@@ -13,6 +13,92 @@ const PLAYSTYLES = {
   scaling:   { name: 'Scaling',   desc: 'Survive early, stack Verdant Blessings, dominate late' },
 };
 
+// ─── Facilities ───────────────────────────────────────────────────────────────
+
+const FACILITY_DEFS = {
+  training: {
+    name: 'Training Facility',
+    icon: '🏋️',
+    desc: 'Better equipment and drills accelerate attribute gains.',
+    maxLevel: 5,
+    costs:  [0, 200000, 500000, 1000000, 2000000], // cost to upgrade to levels 2–5
+    weekly: [0,   2000,   5000,   10000,   20000], // maintenance per level
+    bonus(level) { return 1 + (level - 1) * 0.1; }, // training gain multiplier
+    bonusLabel(level) { return `Training gains ×${(1 + (level-1)*0.1).toFixed(1)}`; },
+  },
+  analysis: {
+    name: 'Analysis Suite',
+    icon: '📊',
+    desc: 'Cutting-edge VOD tools for film study and opponent scouting.',
+    maxLevel: 3,
+    costs:  [0, 150000, 400000],
+    weekly: [0,   3000,   8000],
+    bonus(level) { return (level - 1) * 0.1; }, // film study bonus chance additive
+    bonusLabel(level) { return level > 1 ? `Film Study +${((level-1)*10)}% gain chance` : 'No bonus'; },
+  },
+  medical: {
+    name: 'Medical Bay',
+    icon: '⚕️',
+    desc: 'Faster condition recovery between weeks.',
+    maxLevel: 3,
+    costs:  [0, 100000, 300000],
+    weekly: [0,   2000,   5000],
+    bonus(level) { return (level - 1) * 0.5; }, // extra morale recovery per rest week
+    bonusLabel(level) { return level > 1 ? `Rest morale +${((level-1)*0.5).toFixed(1)} extra` : 'No bonus'; },
+  },
+  streaming: {
+    name: 'Streaming Studio',
+    icon: '🎙️',
+    desc: 'Professional setup multiplies fan gains from streaming activity.',
+    maxLevel: 3,
+    costs:  [0, 80000, 200000],
+    weekly: [0,  1500,   4000],
+    bonus(level) { return 1 + (level - 1) * 0.5; }, // streaming fan gain multiplier
+    bonusLabel(level) { return `Streaming fans ×${(1 + (level-1)*0.5).toFixed(1)}`; },
+  },
+  recruitment: {
+    name: 'Recruitment Office',
+    icon: '🔎',
+    desc: 'More scouts, lower scouting costs.',
+    maxLevel: 3,
+    costs:  [0, 60000, 150000],
+    weekly: [0,  1000,   2500],
+    bonus(level) { return (level - 1) * 0.25; }, // scouting cost reduction fraction
+    bonusLabel(level) { return level > 1 ? `Scout cost -${((level-1)*25)}%` : 'No bonus'; },
+  },
+};
+
+function defaultFacilities() {
+  const f = {};
+  Object.keys(FACILITY_DEFS).forEach(k => { f[k] = 1; });
+  return f;
+}
+
+function getFacilityMaintenanceCost(teamId) {
+  const team = G.teams[teamId];
+  if (!team || !team.facilities) return 0;
+  return Object.entries(team.facilities).reduce((sum, [k, lvl]) => {
+    const def = FACILITY_DEFS[k];
+    return sum + (def ? (def.weekly[lvl - 1] || 0) : 0);
+  }, 0);
+}
+
+function upgradeFacility(facilityKey) {
+  if (!G) return 'error';
+  const team = G.teams[G.humanTeamId];
+  const def  = FACILITY_DEFS[facilityKey];
+  if (!team || !def) return 'error';
+  if (!team.facilities) team.facilities = defaultFacilities();
+  const curLevel = team.facilities[facilityKey] || 1;
+  if (curLevel >= def.maxLevel) return 'max_level';
+  const cost = def.costs[curLevel]; // costs array: index 0=L1→L2, 1=L2→L3, etc.
+  if (team.budget < cost) return 'no_budget';
+  team.budget -= cost;
+  team.facilities[facilityKey] = curLevel + 1;
+  addNews(`${def.name} upgraded to Level ${curLevel + 1}. ${def.bonusLabel(curLevel + 1)}.`, 'info');
+  return 'upgraded';
+}
+
 // ─── Staff Pool ───────────────────────────────────────────────────────────────
 // Roles: headcoach | analyst | conditioning | mental | scout
 
@@ -159,6 +245,7 @@ function initGame(humanTeamId) {
       tactics: {
         playstyle: td.id === humanTeamId ? 'engage' : randomPlaystyle(),
       },
+      facilities: defaultFacilities(),
       weeklyWages: calcWagesBill(td.id),
       sponsorIncome: (td.sponsors || []).reduce((s, sp) => s + sp.weeklyIncome, 0),
       sponsors: td.sponsors ? td.sponsors.map(s => ({ ...s, bonuses: s.bonuses.map(b => ({ ...b })) })) : [],
@@ -330,11 +417,13 @@ function advanceWeek() {
     t.weeklyWages = calcWagesBill(t.id);
     const wages  = t.weeklyWages;
     const income = t.sponsorIncome;
-    const staffCost = t.id === G.humanTeamId ? getStaffWages() : 0;
-    t.budget = (t.budget || 0) - wages - staffCost + income;
+    const staffCost    = t.id === G.humanTeamId ? getStaffWages() : 0;
+    const facilCost    = t.id === G.humanTeamId ? getFacilityMaintenanceCost(t.id) : 0;
+    t.budget = (t.budget || 0) - wages - staffCost - facilCost + income;
     if (t.id === G.humanTeamId) {
       G.financeLog.push({
-        week, wages: wages + staffCost, income, net: income - wages - staffCost, balance: t.budget,
+        week, wages: wages + staffCost + facilCost, income,
+        net: income - wages - staffCost - facilCost, balance: t.budget,
       });
       if (t.budget < 0)
         addNews(`Financial warning: budget is ${fmtMoneySafe(t.budget)}. Consider releasing high earners.`, 'alert');
@@ -455,7 +544,7 @@ const TRAINING_DEFS = {
       players.forEach(p => {
         if (!p) return;
         const moraleBonus = p.morale > 7 ? 1.5 : p.morale < 4 ? 0.5 : 1;
-        const mult = getPersonalityMultiplier(p, 'scrimmage');
+        const mult = getPersonalityMultiplier(p, 'scrimmage') * (p._facilMult || 1);
         if (Math.random() < 0.18 * moraleBonus * mult) {
           const stat = combatStats[Math.floor(Math.random()*combatStats.length)];
           p.stats[stat] = Math.min(20, p.stats[stat] + 1);
@@ -473,7 +562,7 @@ const TRAINING_DEFS = {
       const p = eligible[Math.floor(Math.random()*eligible.length)];
       const stat = Math.random() < 0.6 ? 'mechanics' : 'decisionMaking';
       const moraleBonus = p.morale > 7 ? 1.5 : 1;
-      const mult = getPersonalityMultiplier(p, 'soloqueue');
+      const mult = getPersonalityMultiplier(p, 'soloqueue') * (p._facilMult || 1);
       if (Math.random() < 0.35 * moraleBonus * mult)
         p.stats[stat] = Math.min(20, p.stats[stat] + 1);
     },
@@ -485,8 +574,7 @@ const TRAINING_DEFS = {
     effect(players) {
       players.forEach(p => {
         if (!p) return;
-        const mult = getPersonalityMultiplier(p, 'filmstudy');
-        // maverick gets morale penalty from film study
+        const mult = getPersonalityMultiplier(p, 'filmstudy') * (p._facilMult || 1) * (1 + (p._analystBoost || 0));
         if ((p.personality || 'pro') === 'maverick') {
           p.morale = Math.max(1, p.morale - 0.5);
         }
@@ -510,19 +598,37 @@ const TRAINING_DEFS = {
   },
 };
 
+function getFacilityBonus(teamId, facilityKey) {
+  const team = G.teams[teamId];
+  if (!team || !team.facilities) return 1;
+  const level = team.facilities[facilityKey] || 1;
+  const def = FACILITY_DEFS[facilityKey];
+  return def ? def.bonus(level) : 1;
+}
+
 function processTraining(teamId, choice) {
   let def = TRAINING_DEFS[choice] || TRAINING_DEFS.rest;
-  // Analyst boosts filmstudy effectiveness — patch effect wrapper
+  // Apply training facility multiplier to stat-gaining activities
+  if (choice !== 'rest') {
+    const facilMult = getFacilityBonus(teamId, 'training');
+    if (facilMult > 1) {
+      const origEffect = def.effect;
+      def = { ...def, effect(players, tid) {
+        players.forEach(p => { if (p) p._facilMult = facilMult; });
+        origEffect(players, tid);
+        players.forEach(p => { if (p) delete p._facilMult; });
+      }};
+    }
+  }
+  // Analyst boost is applied directly in filmstudy effect via p._analystBoost flag
   if (choice === 'filmstudy') {
     const analystBonus = getStaffBonus('analyst');
     if (analystBonus > 0) {
-      const origEffect = def.effect;
-      def = { ...def, effect(players, tid) {
-        // Temporarily boost the base chance via a flag players share
-        players.forEach(p => { if (p) p._analystBoost = analystBonus; });
-        origEffect(players, tid);
-        players.forEach(p => { if (p) delete p._analystBoost; });
-      }};
+      const team = G.teams[teamId];
+      POSITIONS.forEach(pos => {
+        const p = team?.roster[pos] ? G.players[team.roster[pos]] : null;
+        if (p) p._analystBoost = analystBonus;
+      });
     }
   }
   const team = G.teams[teamId];
@@ -532,6 +638,9 @@ function processTraining(teamId, choice) {
     return pid ? G.players[pid] : null;
   });
   def.effect(players, teamId);
+
+  // Clean up temp flags
+  players.forEach(p => { if (p) { delete p._analystBoost; delete p._facilMult; } });
 
   // Record in finance log
   if (!G.trainingLog) G.trainingLog = [];

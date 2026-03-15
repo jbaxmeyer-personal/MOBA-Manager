@@ -1543,6 +1543,33 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
 }
 .stream-toggle input:checked + .stream-slider { background: #9b59b6; }
 .stream-toggle input:checked + .stream-slider::before { transform: translateX(14px); background: #fff; }
+/* ─── Facilities Panel ───────────────────────────────────── */
+.fac-summary { font-size: 13px; padding-bottom: 14px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.fac-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.fac-card {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fac-card-top { display: flex; gap: 12px; align-items: flex-start; }
+.fac-icon { font-size: 22px; line-height: 1; }
+.fac-info { flex: 1; }
+.fac-name { font-weight: 700; color: var(--text-hi); font-size: 14px; margin-bottom: 3px; }
+.fac-desc { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
+.fac-level-row { display: flex; align-items: center; gap: 10px; }
+.fac-pips { display: flex; gap: 4px; }
+.fac-pip { width: 14px; height: 6px; border-radius: 3px; background: var(--border2); }
+.fac-pip.fac-pip-on { background: var(--gold); }
+.fac-level-label { font-size: 12px; color: var(--text-dim); }
+.fac-bonus { font-size: 12px; color: var(--win); font-weight: 600; }
+.fac-footer { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.fac-maint { font-size: 11px; color: var(--loss); flex: 1; }
+.fac-maxed { font-size: 11px; color: var(--gold); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
 .stream-sched-select {
   background: var(--panel2);
   color: var(--text);

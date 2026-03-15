@@ -534,7 +534,7 @@ Currently streaming is one of 5 training choices. Make it a standalone parallel 
 
 ---
 
-### 9D — Facilities
+### 9D — Facilities ✅ DONE
 Team infrastructure that provides passive bonuses. Upgrade with budget.
 
 **Facility types:**
