@@ -327,6 +327,23 @@ const FACILITY_DEFS = {
     bonus(level) { return (level - 1) * 0.25; }, // scouting cost reduction fraction
     bonusLabel(level) { return level > 1 ? `Scout cost -${((level-1)*25)}%` : 'No bonus'; },
   },
+  housing: {
+    name: 'Team Housing',
+    icon: '🏠',
+    desc: 'Where your team lives. Better housing improves morale, chemistry, and performance.',
+    maxLevel: 5,
+    levelNames: ['Studio Apartment', 'Shared Apartment', 'Team House', 'Premium Team House', 'Gaming House'],
+    costs:  [0, 80000, 200000, 500000, 1200000],
+    weekly: [500, 1500, 3500, 7000, 15000],
+    bonus(level) { return [0, 0, 0.5, 1.0, 1.5, 2.0][level] || 0; }, // morale floor bonus
+    bonusLabel(level) {
+      const labels = ['No bonus', 'No bonus', 'Morale floor +0.5', 'Morale floor +1.0 · Chem +0.3', 'Morale floor +1.5 · Chem +0.5 · Training +5%', 'Morale floor +2.0 · Chem +1.0 · Training +10% · FES +0.5/wk'];
+      return labels[level] || 'No bonus';
+    },
+    chemBonus(level)  { return [0, 0, 0, 0.3, 0.5, 1.0][level] || 0; },
+    trainMult(level)  { return [1, 1, 1, 1, 1.05, 1.10][level] || 1; },
+    fesBonus(level)   { return level >= 5 ? 0.5 : 0; },
+  },
 };
 
 // Build times by upgrade level (weeks to build): L1→2, L2→3, L3→4, L4→5
@@ -910,6 +927,18 @@ function advanceWeek() {
   _checkFanMilestones(G.humanTeamId);
   _generateWeeklyNews(week);
 
+  // Apply housing morale floor
+  const housingFac = _facState(G.teams[G.humanTeamId], 'housing');
+  const housingMoraleFloor = FACILITY_DEFS.housing.bonus(housingFac.level);
+  if (housingMoraleFloor > 0) {
+    const moraleLow = 4 + housingMoraleFloor;
+    const team = G.teams[G.humanTeamId];
+    POSITIONS.forEach(pos => {
+      const p = team.roster[pos] ? G.players[team.roster[pos]] : null;
+      if (p && p.morale < moraleLow) p.morale = moraleLow;
+    });
+  }
+
   // Apply manager trait: locker_room_leader — morale floor
   if (hasManagerTrait('locker_room_leader')) {
     const team = G.teams[G.humanTeamId];
@@ -1119,9 +1148,11 @@ function getFacilityBonus(teamId, facilityKey) {
 
 function processTraining(teamId, choice) {
   let def = TRAINING_DEFS[choice] || TRAINING_DEFS.rest;
-  // Apply training facility multiplier to stat-gaining activities
+  // Apply training facility multiplier to stat-gaining activities (+ housing bonus)
   if (choice !== 'rest') {
-    const facilMult = getFacilityBonus(teamId, 'training');
+    const housingLevel = _facState(G.teams[teamId], 'housing').level;
+    const housingMult  = FACILITY_DEFS.housing.trainMult(housingLevel);
+    const facilMult = getFacilityBonus(teamId, 'training') * housingMult;
     if (facilMult > 1) {
       const origEffect = def.effect;
       def = { ...def, effect(players, tid) {
@@ -1314,6 +1345,10 @@ function calcFES(teamId) {
   fes += matchBonus;
   team._fesMatchBonus = 0; // consume
 
+  // Team Housing FES bonus (Gaming House level 5)
+  const housingFac = _facState(team, 'housing');
+  fes += FACILITY_DEFS.housing.fesBonus(housingFac.level);
+
   return Math.max(0, Math.min(10, Math.round(fes * 10) / 10));
 }
 
@@ -1399,7 +1434,9 @@ function calcChemistry(teamId) {
   const leaders   = personalities.filter(p => p === 'leader').length;
   const mavericks = personalities.filter(p => p === 'maverick').length;
   const compatBonus = leaders * 0.3 - mavericks * 0.2;
-  return Math.min(10, Math.max(1, Math.round((avgMorale + compatBonus) * 10) / 10));
+  const housingFac  = _facState(team, 'housing');
+  const housingChem = FACILITY_DEFS.housing.chemBonus(housingFac.level);
+  return Math.min(10, Math.max(1, Math.round((avgMorale + compatBonus + housingChem) * 10) / 10));
 }
 
 // ─── Sponsor bonuses ─────────────────────────────────────────────────────────

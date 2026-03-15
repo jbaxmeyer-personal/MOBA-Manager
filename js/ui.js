@@ -2228,7 +2228,7 @@ function renderFacilities() {
         <div class="fac-card-top">
           <span class="fac-icon">${def.icon}</span>
           <div class="fac-info">
-            <div class="fac-name">${def.name}</div>
+            <div class="fac-name">${def.name}${def.levelNames ? ` <span class="fac-level-name">— ${def.levelNames[level-1]}</span>` : ''}</div>
             <div class="fac-desc">${def.desc}</div>
           </div>
         </div>

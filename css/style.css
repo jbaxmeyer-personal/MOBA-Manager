@@ -1803,6 +1803,7 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
 .fac-icon { font-size: 22px; line-height: 1; }
 .fac-info { flex: 1; }
 .fac-name { font-weight: 700; color: var(--text-hi); font-size: 14px; margin-bottom: 3px; }
+.fac-level-name { font-weight: 400; font-size: 12px; color: var(--gold); }
 .fac-desc { font-size: 12px; color: var(--text-dim); line-height: 1.4; }
 .fac-level-row { display: flex; align-items: center; gap: 10px; }
 .fac-pips { display: flex; gap: 4px; }

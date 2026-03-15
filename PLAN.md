@@ -19,7 +19,7 @@
 | ~~Phase 12C — Contract Negotiations~~ | ✅ DONE |
 | ~~Phase 12D — Transfer Market~~ | ✅ DONE |
 | ~~Phase 12E — Fan Events Cooldown UX~~ | ✅ DONE |
-| Phase 12F — Team Housing | New facility tier (Apartment → Gaming House) with morale/chemistry/FES bonuses |
+| ~~Phase 12F — Team Housing~~ | ✅ DONE |
 | Balance & Polish (Phase 8) | Meta system, UI polish, playtesting — not started |
 | Visual Identity (Phase 10) | Pixel-art sprites on map; long-term: isometric PixiJS view |
 
@@ -1154,7 +1154,7 @@ weeklyMarketRate = marketValue / 52
 
 ---
 
-### 12F — Team Housing (replaces Gaming House, merged into Facilities)
+### 12F — Team Housing ✅ DONE (replaces Gaming House, merged into Facilities)
 
 **Core concept:** Your team needs somewhere to live and practice together. This starts basic and grows into a proper gaming house — a real org investment that affects morale, team chemistry, and (at top tier) streaming quality.
 
