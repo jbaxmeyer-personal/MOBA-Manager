@@ -1924,69 +1924,110 @@ function fmtFans(n) {
 
 // ─── Coaching Staff ───────────────────────────────────────────────────────────
 
-function renderStaff() {
-  if (!G) return;
-  const team     = G.teams[G.humanTeamId];
-  const hired    = G.staff || [];
-  const hiredIds = new Set(hired.map(s => s.id));
-  const hiredRoles = new Set(hired.map(s => s.role));
+function _staffAttrBars(s) {
+  const attrKeys = (STAFF_ROLE_ATTRS && STAFF_ROLE_ATTRS[s.role]) || [];
+  return attrKeys.map(key => {
+    const val = s.attrs?.[key] ?? 10;
+    const pct = (val / 20) * 100;
+    const color = val >= 15 ? '#4caf50' : val >= 10 ? '#c89b3c' : '#888';
+    const label = (STAFF_ROLE_ATTR_LABELS && STAFF_ROLE_ATTR_LABELS[key]) || key;
+    return `<div class="staff-attr-row">
+      <span class="staff-attr-label">${label}</span>
+      <div class="staff-attr-bar-bg"><div class="staff-attr-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+      <span class="staff-attr-val" style="color:${color}">${val}</span>
+    </div>`;
+  }).join('');
+}
 
-  // Current staff section
-  const hiredHtml = hired.length
-    ? hired.map(s => `
-        <div class="staff-card staff-hired">
-          <div class="staff-card-top">
-            <div>
-              <span class="staff-role-badge">${STAFF_ROLE_LABEL[s.role] || s.role}</span>
-              <span class="staff-name">${_escHtml(s.name)}</span>
-            </div>
-            <div class="staff-stat-box">${s.stat}<span class="staff-stat-label"> / 20</span></div>
-          </div>
-          <div class="staff-desc">${_escHtml(s.desc)}</div>
-          <div class="staff-card-footer">
-            <span class="staff-wage">${fmtMoney(s.wage)}/wk</span>
-            <button class="btn-secondary" onclick="onFireStaff('${s.id}')">Release</button>
-          </div>
-        </div>`)
-      .join('')
-    : '<div class="staff-empty">No coaching staff hired. Browse available staff below.</div>';
-
-  // Available pool section
-  const available = STAFF_POOL.filter(s => !hiredIds.has(s.id));
-  const availHtml = available.map(s => {
-    const roleBlocked = hiredRoles.has(s.role);
+function _staffCardHtml(s, mode) {
+  // mode: 'hired' | 'available'
+  const ovr = _staffOverall(s.attrs || {});
+  const ovrColor = ovr >= 14 ? '#4caf50' : ovr >= 10 ? '#c89b3c' : '#888';
+  const attrBars = _staffAttrBars(s);
+  const bonus = (STAFF_ROLE_BONUS && STAFF_ROLE_BONUS[s.role]) || '';
+  if (mode === 'hired') {
+    return `<div class="staff-card staff-hired">
+      <div class="staff-card-top">
+        <div class="staff-card-info">
+          <span class="staff-role-badge">${STAFF_ROLE_LABEL[s.role] || s.role}</span>
+          <span class="staff-name">${_escHtml(s.name)}</span>
+          <span class="staff-nat" style="color:var(--text-dim)">${s.nationality || ''}</span>
+        </div>
+        <div class="staff-ovr-box" style="color:${ovrColor}">${ovr}</div>
+      </div>
+      <div class="staff-attr-block">${attrBars}</div>
+      <div class="staff-bonus-line">${bonus}</div>
+      <div class="staff-card-footer">
+        <span class="staff-wage">${fmtMoney(s.wage)}/wk</span>
+        <button class="btn-secondary" onclick="onFireStaff('${s.id}')">Release</button>
+      </div>
+    </div>`;
+  } else {
+    // available — check hire eligibility
+    const team = G.teams[G.humanTeamId];
+    const roleBlocked = (G.staff || []).some(x => x.role === s.role);
     const canAfford   = team.budget >= s.wage * 4;
     const disabled    = roleBlocked || !canAfford;
     const reason      = roleBlocked ? 'Role filled' : (!canAfford ? 'Insufficient budget' : '');
-    return `
-      <div class="staff-card ${disabled ? 'staff-card-dim' : ''}">
-        <div class="staff-card-top">
-          <div>
-            <span class="staff-role-badge">${STAFF_ROLE_LABEL[s.role] || s.role}</span>
-            <span class="staff-name">${_escHtml(s.name)}</span>
-            <span class="staff-nat" style="color:var(--text-dim)">${s.nationality}</span>
-          </div>
-          <div class="staff-stat-box">${s.stat}<span class="staff-stat-label"> / 20</span></div>
+    return `<div class="staff-card ${disabled ? 'staff-card-dim' : ''}">
+      <div class="staff-card-top">
+        <div class="staff-card-info">
+          <span class="staff-role-badge">${STAFF_ROLE_LABEL[s.role] || s.role}</span>
+          <span class="staff-name">${_escHtml(s.name)}</span>
+          <span class="staff-nat" style="color:var(--text-dim)">${s.nationality || ''}</span>
         </div>
-        <div class="staff-desc">${_escHtml(s.desc)}</div>
-        <div class="staff-card-footer">
-          <span class="staff-wage">${fmtMoney(s.wage)}/wk</span>
-          ${reason ? `<span class="staff-reason">${reason}</span>` : ''}
-          <button class="btn-primary" onclick="onHireStaff('${s.id}')"
-            ${disabled ? 'disabled' : ''} style="font-size:12px;padding:5px 14px">Hire</button>
-        </div>
-      </div>`;
+        <div class="staff-ovr-box" style="color:${ovrColor}">${ovr}</div>
+      </div>
+      <div class="staff-attr-block">${attrBars}</div>
+      <div class="staff-bonus-line">${bonus}</div>
+      <div class="staff-card-footer">
+        <span class="staff-wage">${fmtMoney(s.wage)}/wk</span>
+        ${reason ? `<span class="staff-reason">${reason}</span>` : ''}
+        <button class="btn-primary" onclick="onHireStaff('${s.id}')"
+          ${disabled ? 'disabled' : ''} style="font-size:12px;padding:5px 14px">Hire</button>
+      </div>
+    </div>`;
+  }
+}
+
+function renderStaff() {
+  if (!G) return;
+  const team    = G.teams[G.humanTeamId];
+  const hired   = G.staff || [];
+  const hiredByRole = {};
+  hired.forEach(s => { hiredByRole[s.role] = s; });
+
+  // Roster slots — one per role in order
+  const rolesOrder = (typeof STAFF_ROLES_ORDER !== 'undefined') ? STAFF_ROLES_ORDER : ['headcoach','analyst','marketing','mental','scout'];
+  const rosterSlots = rolesOrder.map(role => {
+    const member = hiredByRole[role];
+    if (member) {
+      return `<div class="staff-slot staff-slot-filled">${_staffCardHtml(member, 'hired')}</div>`;
+    }
+    const roleLabel = (STAFF_ROLE_LABEL && STAFF_ROLE_LABEL[role]) || role;
+    const bonus     = (STAFF_ROLE_BONUS  && STAFF_ROLE_BONUS[role])  || '';
+    return `<div class="staff-slot staff-slot-vacant">
+      <div class="staff-vacant-role">${roleLabel}</div>
+      <div class="staff-vacant-bonus">${bonus}</div>
+      <div class="staff-vacant-label">— Vacant —</div>
+    </div>`;
   }).join('');
+
+  // Available pool (not hired)
+  const hiredIds = new Set(hired.map(s => s.id));
+  const available = STAFF_POOL.filter(s => !hiredIds.has(s.id));
+  const availHtml = available.length
+    ? available.map(s => _staffCardHtml(s, 'available')).join('')
+    : '<div class="staff-empty" style="grid-column:1/-1">No staff available.</div>';
 
   const totalStaffWage = hired.reduce((s, m) => s + m.wage, 0);
   setHtml('staff-content', `
     <div class="staff-budget-bar">
       Staff wages: <strong style="color:var(--gold)">${fmtMoney(totalStaffWage)}/wk</strong>
       &nbsp;·&nbsp; Budget: <strong style="color:var(--gold)">${fmtMoney(team.budget)}</strong>
-      <span style="color:var(--text-dim);font-size:11px;margin-left:8px">(one staff per role)</span>
     </div>
-    <h3 class="staff-section-title">Your Coaching Team</h3>
-    <div class="staff-grid">${hiredHtml}</div>
+    <h3 class="staff-section-title">Staff Roster</h3>
+    <div class="staff-roster">${rosterSlots}</div>
     <h3 class="staff-section-title" style="margin-top:20px">Available Staff</h3>
     <div class="staff-grid">${availHtml}</div>
   `);

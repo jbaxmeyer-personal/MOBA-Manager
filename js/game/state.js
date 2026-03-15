@@ -226,48 +226,117 @@ function upgradeFacility(facilityKey) {
 // ─── Staff Pool ───────────────────────────────────────────────────────────────
 // Roles: headcoach | analyst | conditioning | mental | scout
 
+// attrs keys per role: headcoach[tactics,development,motivation,communication,experience]
+//   analyst[filmStudy,draftReading,dataAnalysis,opponentScouting,adaptability]
+//   marketing[contentProduction,socialMedia,eventManagement,brandDeals,fanEngagement]
+//   mental[motivation,pressureHandling,conflictResolution,playerTrust,teamBuilding]
+//   scout[networkReach,judgement,speed,costEfficiency,specialisation]
+function _staffOverall(attrs) {
+  const vals = Object.values(attrs);
+  return Math.round(vals.reduce((s, v) => s + v, 0) / vals.length);
+}
+
 const STAFF_POOL = [
-  { id:'st01', name:'Aldric Vale',    role:'headcoach',     stat:15, wage:25000, nationality:'EU',
-    desc:'Former pro with championship experience. Accelerates player development.' },
-  { id:'st02', name:'Brynn Ashford',  role:'headcoach',     stat:12, wage:18000, nationality:'NA',
-    desc:'Methodical coach known for structured practice routines.' },
-  { id:'st03', name:'Oryn Marsh',     role:'headcoach',     stat:10, wage:12000, nationality:'KOR',
-    desc:'Up-and-coming coach. Affordable and hungry to prove himself.' },
-  { id:'st04', name:'Selene Croft',   role:'analyst',       stat:16, wage:20000, nationality:'EU',
-    desc:'Data-driven analyst. Dramatically improves draft counter-pick success.' },
-  { id:'st05', name:'Gael Winters',   role:'analyst',       stat:11, wage:10000, nationality:'NA',
-    desc:'Self-taught analyst with sharp reads on opposing team tendencies.' },
-  { id:'st06', name:'Toma Ironsong',  role:'conditioning',  stat:14, wage:15000, nationality:'KOR',
-    desc:'Elite physical trainer. Players recover faster and stay fresh longer.' },
-  { id:'st07', name:'Fira Moss',      role:'conditioning',  stat:10, wage:9000,  nationality:'EU',
-    desc:'Former athlete who transitioned into esports conditioning.' },
-  { id:'st08', name:'Declan Holt',    role:'mental',        stat:13, wage:16000, nationality:'NA',
-    desc:'Sports psychologist specialising in high-pressure performance.' },
-  { id:'st09', name:'Vesper Gray',    role:'mental',        stat:11, wage:11000, nationality:'EU',
-    desc:'Calm presence in the team room. Keeps volatile personalities in check.' },
-  { id:'st10', name:'Riven Blackwell',role:'scout',         stat:15, wage:14000, nationality:'KOR',
-    desc:'World-class scout. Finds hidden talent faster and cheaper than anyone.' },
-  { id:'st11', name:'Calder Fenn',    role:'scout',         stat:11, wage:8000,  nationality:'NA',
-    desc:'Reliable regional scout with a good eye for young ADC talent.' },
-  { id:'st12', name:'Mira Ashgrove',  role:'conditioning',  stat:12, wage:12000, nationality:'NA',
-    desc:'Known for preventing burnout in gruelling split schedules.' },
+  // ─ Head Coaches ─
+  { id:'st01', name:'Aldric Vale',     role:'headcoach',  wage:25000, nationality:'EU',
+    desc:'Former pro with championship experience. Accelerates player development.',
+    attrs:{ tactics:16, development:15, motivation:14, communication:13, experience:17 } },
+  { id:'st02', name:'Brynn Ashford',   role:'headcoach',  wage:18000, nationality:'NA',
+    desc:'Methodical coach known for structured practice routines.',
+    attrs:{ tactics:12, development:13, motivation:11, communication:15, experience:10 } },
+  { id:'st03', name:'Oryn Marsh',      role:'headcoach',  wage:12000, nationality:'KOR',
+    desc:'Up-and-coming coach. Affordable and hungry to prove himself.',
+    attrs:{ tactics:10, development:11, motivation:12, communication:9,  experience:7  } },
+  // ─ Analysts ─
+  { id:'st04', name:'Selene Croft',    role:'analyst',    wage:20000, nationality:'EU',
+    desc:'Data-driven analyst. Dramatically improves draft counter-pick success.',
+    attrs:{ filmStudy:17, draftReading:16, dataAnalysis:15, opponentScouting:16, adaptability:14 } },
+  { id:'st05', name:'Gael Winters',    role:'analyst',    wage:10000, nationality:'NA',
+    desc:'Self-taught analyst with sharp reads on opposing team tendencies.',
+    attrs:{ filmStudy:10, draftReading:13, dataAnalysis:9,  opponentScouting:12, adaptability:11 } },
+  { id:'st13', name:'Yuki Strand',     role:'analyst',    wage:15000, nationality:'KOR',
+    desc:'VOD review specialist. Finds weaknesses opponents don\'t know they have.',
+    attrs:{ filmStudy:14, draftReading:11, dataAnalysis:16, opponentScouting:15, adaptability:12 } },
+  // ─ Marketing Managers ─
+  { id:'st14', name:'Cass Everly',     role:'marketing',  wage:18000, nationality:'NA',
+    desc:'Social media powerhouse. Turns wins into viral moments.',
+    attrs:{ contentProduction:16, socialMedia:18, eventManagement:12, brandDeals:14, fanEngagement:15 } },
+  { id:'st15', name:'Dario Brent',     role:'marketing',  wage:12000, nationality:'EU',
+    desc:'Event specialist with strong brand partnership network.',
+    attrs:{ contentProduction:11, socialMedia:10, eventManagement:15, brandDeals:16, fanEngagement:12 } },
+  { id:'st16', name:'Nadia Fell',      role:'marketing',  wage:9000,  nationality:'NA',
+    desc:'Budget-friendly content creator. Great for smaller orgs.',
+    attrs:{ contentProduction:10, socialMedia:12, eventManagement:9,  brandDeals:8,  fanEngagement:11 } },
+  // ─ Mental Coaches ─
+  { id:'st08', name:'Declan Holt',     role:'mental',     wage:16000, nationality:'NA',
+    desc:'Sports psychologist specialising in high-pressure performance.',
+    attrs:{ motivation:14, pressureHandling:16, conflictResolution:13, playerTrust:15, teamBuilding:12 } },
+  { id:'st09', name:'Vesper Gray',     role:'mental',     wage:11000, nationality:'EU',
+    desc:'Calm presence in the team room. Keeps volatile personalities in check.',
+    attrs:{ motivation:11, pressureHandling:12, conflictResolution:15, playerTrust:13, teamBuilding:11 } },
+  { id:'st17', name:'Marek Thorn',     role:'mental',     wage:8000,  nationality:'KOR',
+    desc:'Young sports therapist with unconventional methods.',
+    attrs:{ motivation:13, pressureHandling:9,  conflictResolution:10, playerTrust:11, teamBuilding:14 } },
+  // ─ Scouts ─
+  { id:'st10', name:'Riven Blackwell', role:'scout',      wage:14000, nationality:'KOR',
+    desc:'World-class scout. Finds hidden talent faster and cheaper than anyone.',
+    attrs:{ networkReach:16, judgement:15, speed:14, costEfficiency:13, specialisation:17 } },
+  { id:'st11', name:'Calder Fenn',     role:'scout',      wage:8000,  nationality:'NA',
+    desc:'Reliable regional scout with a good eye for young ADC talent.',
+    attrs:{ networkReach:10, judgement:11, speed:12, costEfficiency:14, specialisation:13 } },
+  { id:'st18', name:'Priya Lake',      role:'scout',      wage:11000, nationality:'EU',
+    desc:'Broad international network. Discovers overseas talent efficiently.',
+    attrs:{ networkReach:15, judgement:12, speed:10, costEfficiency:11, specialisation:10 } },
 ];
 
+// Derive legacy .stat from primary attribute for each role
+STAFF_POOL.forEach(s => {
+  const primary = {
+    headcoach: 'development', analyst: 'filmStudy', marketing: 'contentProduction',
+    mental: 'motivation', scout: 'judgement',
+  }[s.role] || 'development';
+  s.stat = s.attrs[primary] || _staffOverall(s.attrs);
+});
+
 const STAFF_ROLE_LABEL = {
-  headcoach:    'Head Coach',
-  analyst:      'Analyst',
-  conditioning: 'S&C Coach',
-  mental:       'Mental Coach',
-  scout:        'Scout',
+  headcoach:  'Head Coach',
+  analyst:    'Analyst',
+  marketing:  'Marketing Manager',
+  mental:     'Mental Coach',
+  scout:      'Scout',
+};
+
+const STAFF_ROLE_ATTRS = {
+  headcoach:  ['tactics', 'development', 'motivation', 'communication', 'experience'],
+  analyst:    ['filmStudy', 'draftReading', 'dataAnalysis', 'opponentScouting', 'adaptability'],
+  marketing:  ['contentProduction', 'socialMedia', 'eventManagement', 'brandDeals', 'fanEngagement'],
+  mental:     ['motivation', 'pressureHandling', 'conflictResolution', 'playerTrust', 'teamBuilding'],
+  scout:      ['networkReach', 'judgement', 'speed', 'costEfficiency', 'specialisation'],
+};
+
+const STAFF_ROLE_ATTR_LABELS = {
+  tactics: 'Tactics', development: 'Development', motivation: 'Motivation',
+  communication: 'Communication', experience: 'Experience',
+  filmStudy: 'Film Study', draftReading: 'Draft Reading', dataAnalysis: 'Data Analysis',
+  opponentScouting: 'Opp. Scouting', adaptability: 'Adaptability',
+  contentProduction: 'Content Prod.', socialMedia: 'Social Media',
+  eventManagement: 'Event Mgmt', brandDeals: 'Brand Deals', fanEngagement: 'Fan Engagement',
+  pressureHandling: 'Pressure', conflictResolution: 'Conflict Res.', playerTrust: 'Player Trust',
+  teamBuilding: 'Team Building',
+  networkReach: 'Network Reach', judgement: 'Judgement', speed: 'Speed',
+  costEfficiency: 'Cost Eff.', specialisation: 'Specialisation',
 };
 
 const STAFF_ROLE_BONUS = {
-  headcoach:    'Training gains ×+stat%',
-  analyst:      'Film Study ×+stat% · Draft edge',
-  conditioning: 'Condition recovery +stat/wk',
-  mental:       'Morale recovery +stat · Clash reduction',
-  scout:        'Scout cost -stat% · Report speed +1wk',
+  headcoach:  'Training gains · Player development',
+  analyst:    'Film Study boost · Draft edge',
+  marketing:  'Fan Engagement Score · Co-streaming quality',
+  mental:     'Morale recovery · Clash reduction',
+  scout:      'Scout cost reduction · Report speed',
 };
+
+// Ordered list of role slots for display
+const STAFF_ROLES_ORDER = ['headcoach', 'analyst', 'marketing', 'mental', 'scout'];
 
 // ─── Scout Pool ───────────────────────────────────────────────────────────────
 

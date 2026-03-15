@@ -1787,3 +1787,65 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
 .btn-sm:disabled { opacity: 0.4; cursor: not-allowed; }
 .btn-danger { border-color: rgba(244,67,54,0.5); color: var(--loss); }
 .btn-danger:hover:not(:disabled) { background: rgba(244,67,54,0.2); border-color: var(--loss); color: var(--loss); }
+
+/* ─── Staff Roster (Phase 11B) ───────────────────────────── */
+.staff-roster {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.staff-slot { border-radius: var(--radius); }
+.staff-slot-filled { }
+.staff-slot-vacant {
+  background: var(--panel2);
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: var(--text-dim);
+}
+.staff-vacant-role { font-weight: 700; color: var(--text-hi); font-size: 13px; min-width: 140px; }
+.staff-vacant-bonus { flex: 1; font-size: 12px; color: var(--text-dim); }
+.staff-vacant-label { font-size: 12px; color: var(--border2); font-style: italic; }
+
+.staff-card {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.staff-card.staff-hired { border-color: rgba(76,175,80,0.3); }
+.staff-card.staff-card-dim { opacity: 0.55; }
+.staff-card-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.staff-card-info { flex: 1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.staff-name { font-weight: 700; color: var(--text-hi); font-size: 14px; }
+.staff-nat  { font-size: 11px; }
+.staff-role-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 12px;
+  background: rgba(200,155,60,0.18); color: var(--gold);
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.staff-ovr-box {
+  font-size: 22px; font-weight: 700; min-width: 36px; text-align: center;
+}
+
+.staff-attr-block { display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
+.staff-attr-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.staff-attr-label { flex: 0 0 110px; color: var(--text-dim); font-size: 11px; }
+.staff-attr-bar-bg { flex: 1; height: 6px; background: var(--border2); border-radius: 3px; }
+.staff-attr-bar-fill { height: 100%; border-radius: 3px; }
+.staff-attr-val { font-weight: 700; min-width: 22px; text-align: right; font-size: 12px; }
+
+.staff-bonus-line { font-size: 11px; color: var(--text-dim); margin-bottom: 8px; }
+.staff-card-footer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.staff-wage { font-size: 13px; color: var(--gold); font-weight: 600; flex: 1; }
+.staff-reason { font-size: 11px; color: var(--text-dim); }
+
+.staff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
