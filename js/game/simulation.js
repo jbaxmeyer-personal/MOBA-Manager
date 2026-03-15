@@ -91,25 +91,27 @@ const OBJ_DEFS = [
   { id:'b_bot1',   side:'blue',    type:'root',    x:185, y:265, maxHp: 4000, atkDmg: 8, atkRange:32 },
   { id:'b_bot2',   side:'blue',    type:'root',    x:115, y:265, maxHp: 5500, atkDmg:12, atkRange:32 },
   // ── Blue mid lane (diagonal, enemies from top-right) ────────────────────────
-  { id:'b_mid1',   side:'blue',    type:'root',    x:110, y:210, maxHp: 4000, atkDmg: 8, atkRange:32 },
-  { id:'b_mid2',   side:'blue',    type:'root',    x: 80, y:175, maxHp: 5500, atkDmg:12, atkRange:32 },
+  // ON the diagonal: x + y = 300. b_mid1 outer (hit first by red), b_mid2 inner (closer to blue base)
+  { id:'b_mid1',   side:'blue',    type:'root',    x:110, y:190, maxHp: 4000, atkDmg: 8, atkRange:32 },
+  { id:'b_mid2',   side:'blue',    type:'root',    x: 80, y:220, maxHp: 5500, atkDmg:12, atkRange:32 },
   // ── Blue top lane (left edge, enemies come from above) ──────────────────────
   { id:'b_top1',   side:'blue',    type:'root',    x: 35, y:185, maxHp: 4000, atkDmg: 8, atkRange:32 },
   { id:'b_top2',   side:'blue',    type:'root',    x: 35, y:115, maxHp: 5500, atkDmg:12, atkRange:32 },
   // ── Blue base ───────────────────────────────────────────────────────────────
-  { id:'b_heart',  side:'blue',    type:'root',    x: 40, y: 65, maxHp: 7000, atkDmg:18, atkRange:32 },
+  { id:'b_heart',  side:'blue',    type:'root',    x: 55, y: 50, maxHp: 7000, atkDmg:18, atkRange:32 },
   { id:'b_ancient',side:'blue',    type:'ancient', x: 22, y:278, maxHp:12000, atkDmg:25, atkRange:36 },
   // ── Red top lane (top edge, enemies come from left) — mirror of blue bot ────
   { id:'r_top1',   side:'red',     type:'root',    x:115, y: 35, maxHp: 4000, atkDmg: 8, atkRange:32 },
   { id:'r_top2',   side:'red',     type:'root',    x:185, y: 35, maxHp: 5500, atkDmg:12, atkRange:32 },
   // ── Red mid lane (diagonal, enemies from bottom-left) — mirror of blue mid ─
-  { id:'r_mid1',   side:'red',     type:'root',    x:190, y: 90, maxHp: 4000, atkDmg: 8, atkRange:32 },
-  { id:'r_mid2',   side:'red',     type:'root',    x:220, y:125, maxHp: 5500, atkDmg:12, atkRange:32 },
+  // ON the diagonal: x + y = 300. r_mid1 outer (hit first by blue), r_mid2 inner (closer to red base)
+  { id:'r_mid1',   side:'red',     type:'root',    x:190, y:110, maxHp: 4000, atkDmg: 8, atkRange:32 },
+  { id:'r_mid2',   side:'red',     type:'root',    x:220, y: 80, maxHp: 5500, atkDmg:12, atkRange:32 },
   // ── Red bot lane (right edge, enemies come from below) — mirror of blue top ─
   { id:'r_bot1',   side:'red',     type:'root',    x:265, y:115, maxHp: 4000, atkDmg: 8, atkRange:32 },
   { id:'r_bot2',   side:'red',     type:'root',    x:265, y:185, maxHp: 5500, atkDmg:12, atkRange:32 },
   // ── Red base ────────────────────────────────────────────────────────────────
-  { id:'r_heart',  side:'red',     type:'root',    x:260, y:235, maxHp: 7000, atkDmg:18, atkRange:32 },
+  { id:'r_heart',  side:'red',     type:'root',    x:245, y:250, maxHp: 7000, atkDmg:18, atkRange:32 },
   { id:'r_ancient',side:'red',     type:'ancient', x:278, y: 22, maxHp:12000, atkDmg:25, atkRange:36 },
   // ── Neutral objectives ──────────────────────────────────────────────────────
   { id:'shrine',   side:'neutral', type:'shrine',  x:150, y:150, maxHp: 2000, atkDmg: 0, atkRange: 0 },

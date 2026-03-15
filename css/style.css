@@ -649,11 +649,12 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
   width: 100%;
 }
 .pbp-map-svg {
-  flex: 1;
+  /* Explicit height to prevent flex+aspect-ratio overflow.
+     52 header + 44 scoreboard + 130 bottom + 10 padding + 80 legend/chart = 316 → use 340 for buffer */
+  height: calc(100vh - 340px);
+  width: auto;
   min-height: 0;
-  min-width: 0;
   max-width: 100%;
-  max-height: calc(100vh - 290px);
   aspect-ratio: 1 / 1;
   border-radius: 8px;
   border: 1px solid #1e3a1e;
