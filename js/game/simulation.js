@@ -98,7 +98,7 @@ const OBJ_DEFS = [
   { id:'b_top1',   side:'blue',    type:'root',    x: 35, y:185, maxHp: 4000, atkDmg: 8, atkRange:32 },
   { id:'b_top2',   side:'blue',    type:'root',    x: 35, y:115, maxHp: 5500, atkDmg:12, atkRange:32 },
   // ── Blue base ───────────────────────────────────────────────────────────────
-  { id:'b_heart',  side:'blue',    type:'root',    x: 55, y: 50, maxHp: 7000, atkDmg:18, atkRange:32 },
+  { id:'b_heart',  side:'blue',    type:'root',    x: 55, y:240, maxHp: 7000, atkDmg:18, atkRange:32 },
   { id:'b_ancient',side:'blue',    type:'ancient', x: 22, y:278, maxHp:12000, atkDmg:25, atkRange:36 },
   // ── Red top lane (top edge, enemies come from left) — mirror of blue bot ────
   { id:'r_top1',   side:'red',     type:'root',    x:115, y: 35, maxHp: 4000, atkDmg: 8, atkRange:32 },
@@ -111,11 +111,12 @@ const OBJ_DEFS = [
   { id:'r_bot1',   side:'red',     type:'root',    x:265, y:115, maxHp: 4000, atkDmg: 8, atkRange:32 },
   { id:'r_bot2',   side:'red',     type:'root',    x:265, y:185, maxHp: 5500, atkDmg:12, atkRange:32 },
   // ── Red base ────────────────────────────────────────────────────────────────
-  { id:'r_heart',  side:'red',     type:'root',    x:245, y:250, maxHp: 7000, atkDmg:18, atkRange:32 },
+  { id:'r_heart',  side:'red',     type:'root',    x:245, y: 60, maxHp: 7000, atkDmg:18, atkRange:32 },
   { id:'r_ancient',side:'red',     type:'ancient', x:278, y: 22, maxHp:12000, atkDmg:25, atkRange:36 },
   // ── Neutral objectives ──────────────────────────────────────────────────────
-  { id:'shrine',   side:'neutral', type:'shrine',  x:150, y:150, maxHp: 2000, atkDmg: 0, atkRange: 0 },
-  { id:'warden',   side:'neutral', type:'warden',  x:150, y:125, maxHp: 5000, atkDmg: 6, atkRange:28 },
+  // Neutral objectives: Shrine (Dragon-side, bot lane river) and Warden (Baron-side, top lane river)
+  { id:'shrine',   side:'neutral', type:'shrine',  x:115, y:185, maxHp: 2000, atkDmg: 0, atkRange: 0 },
+  { id:'warden',   side:'neutral', type:'warden',  x:185, y:115, maxHp: 5000, atkDmg: 6, atkRange:28 },
 ];
 
 // Jungle camps

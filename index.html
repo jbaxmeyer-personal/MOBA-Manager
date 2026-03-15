@@ -430,12 +430,12 @@
             <rect x="32" y="98" width="6" height="5" rx="1" fill="#4fc3f7" opacity="0.7"/>
             <rect x="28" y="120" width="14" height="3" rx="1" fill="#152a10" id="obj-hp-b_top2" data-maxw="14"/>
           </g>
-          <!-- Blue base tower (55,50) — inside base corner, clear of top lane (x=35) -->
+          <!-- Blue base tower (55,240) — near blue nexus (22,278), inside base area -->
           <g id="obj-b_heart">
-            <rect x="48" y="43" width="14" height="14" rx="2" fill="#0a2040" stroke="#4fc3f7" stroke-width="2"/>
-            <line x1="55" y1="37" x2="55" y2="43" stroke="#4fc3f7" stroke-width="1.5"/>
-            <rect x="52" y="33" width="6" height="5" rx="1" fill="#4fc3f7" opacity="0.9"/>
-            <rect x="48" y="55" width="14" height="3" rx="1" fill="#152a10" id="obj-hp-b_heart" data-maxw="14"/>
+            <rect x="48" y="233" width="14" height="14" rx="2" fill="#0a2040" stroke="#4fc3f7" stroke-width="2"/>
+            <line x1="55" y1="227" x2="55" y2="233" stroke="#4fc3f7" stroke-width="1.5"/>
+            <rect x="52" y="223" width="6" height="5" rx="1" fill="#4fc3f7" opacity="0.9"/>
+            <rect x="48" y="245" width="14" height="3" rx="1" fill="#152a10" id="obj-hp-b_heart" data-maxw="14"/>
           </g>
 
           <!-- ══ RED TOWERS (2 per lane, perfect mirror of blue) ════════════════ -->
@@ -481,28 +481,28 @@
             <rect x="262" y="168" width="6" height="5" rx="1" fill="#ff7b7b" opacity="0.7"/>
             <rect x="258" y="190" width="14" height="3" rx="1" fill="#2a1010" id="obj-hp-r_bot2" data-maxw="14"/>
           </g>
-          <!-- Red base tower (245,250) — inside base corner, clear of bot lane (x=265) -->
+          <!-- Red base tower (245,60) — near red nexus (278,22), inside base area -->
           <g id="obj-r_heart">
-            <rect x="238" y="243" width="14" height="14" rx="2" fill="#200a0a" stroke="#ff7b7b" stroke-width="2"/>
-            <line x1="245" y1="237" x2="245" y2="243" stroke="#ff7b7b" stroke-width="1.5"/>
-            <rect x="242" y="233" width="6" height="5" rx="1" fill="#ff7b7b" opacity="0.9"/>
-            <rect x="238" y="255" width="14" height="3" rx="1" fill="#2a1010" id="obj-hp-r_heart" data-maxw="14"/>
+            <rect x="238" y="53" width="14" height="14" rx="2" fill="#200a0a" stroke="#ff7b7b" stroke-width="2"/>
+            <line x1="245" y1="47" x2="245" y2="53" stroke="#ff7b7b" stroke-width="1.5"/>
+            <rect x="242" y="43" width="6" height="5" rx="1" fill="#ff7b7b" opacity="0.9"/>
+            <rect x="238" y="65" width="14" height="3" rx="1" fill="#2a1010" id="obj-hp-r_heart" data-maxw="14"/>
           </g>
 
-          <!-- ── Ley Shrine (map center 150,150) ─────────────────────────────── -->
+          <!-- ── Ley Shrine (115,185) — Dragon-side river pit ───────────────── -->
           <g id="obj-shrine">
-            <circle cx="150" cy="150" r="12" fill="#1a1400" stroke="#c89b3c" stroke-width="2"/>
-            <polygon points="150,141 158,155 142,155" fill="none" stroke="#c89b3c" stroke-width="1.2" opacity="0.8"/>
-            <text x="150" y="170" text-anchor="middle" font-size="5" fill="#c89b3c">SHRINE</text>
-            <rect x="140" y="163" width="20" height="3" rx="1" fill="#1a1200" id="obj-hp-shrine" data-maxw="20"/>
+            <circle cx="115" cy="185" r="12" fill="#1a1400" stroke="#c89b3c" stroke-width="2"/>
+            <polygon points="115,176 123,190 107,190" fill="none" stroke="#c89b3c" stroke-width="1.2" opacity="0.8"/>
+            <text x="115" y="205" text-anchor="middle" font-size="5" fill="#c89b3c">SHRINE</text>
+            <rect x="105" y="198" width="20" height="3" rx="1" fill="#1a1200" id="obj-hp-shrine" data-maxw="20"/>
           </g>
 
-          <!-- ── Grove Warden (150,125) ─────────────────────────────────────── -->
+          <!-- ── Grove Warden (185,115) — Baron-side river pit ─────────────── -->
           <g id="obj-warden">
-            <circle cx="150" cy="125" r="11" fill="#120a1a" stroke="#9b59b6" stroke-width="2"/>
-            <text x="150" y="129" text-anchor="middle" font-size="6" fill="#9b59b6" font-weight="bold">W</text>
-            <text x="150" y="143" text-anchor="middle" font-size="4.5" fill="#9b59b6">WARDEN</text>
-            <rect x="140" y="137" width="20" height="3" rx="1" fill="#0a0a12" id="obj-hp-warden" data-maxw="20"/>
+            <circle cx="185" cy="115" r="11" fill="#120a1a" stroke="#9b59b6" stroke-width="2"/>
+            <text x="185" y="119" text-anchor="middle" font-size="6" fill="#9b59b6" font-weight="bold">W</text>
+            <text x="185" y="133" text-anchor="middle" font-size="4.5" fill="#9b59b6">WARDEN</text>
+            <rect x="175" y="127" width="20" height="3" rx="1" fill="#0a0a12" id="obj-hp-warden" data-maxw="20"/>
           </g>
 
           <!-- ── Event ring ─────────────────────────────────────────────────── -->
@@ -591,12 +591,6 @@
         <div id="lsp-red-rows"></div>
       </div>
     </div><!-- end pbp-main -->
-    <!-- Real-time scoreboard -->
-    <div id="pbp-scoreboard" class="pbp-scoreboard">
-      <div id="pbp-sb-blue" class="pbp-sb-side"></div>
-      <div class="pbp-sb-sep"></div>
-      <div id="pbp-sb-red" class="pbp-sb-side"></div>
-    </div>
     <!-- Bottom: controls + event feed -->
     <div class="pbp-bottom">
       <div class="pbp-controls" id="pbp-controls">

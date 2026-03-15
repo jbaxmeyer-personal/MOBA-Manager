@@ -647,15 +647,18 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
   align-items: center;
   gap: 4px;
   width: 100%;
+  overflow: hidden;
 }
 .pbp-map-svg {
-  /* Explicit height to prevent flex+aspect-ratio overflow.
-     52 header + 44 scoreboard + 130 bottom + 10 padding + 80 legend/chart = 316 → use 340 for buffer */
-  height: calc(100vh - 340px);
-  width: auto;
-  min-height: 0;
-  max-width: 100%;
+  /* Sized by width:100% of container, height auto via aspect-ratio.
+     max-height/max-width clamp the square to fit in the viewport height.
+     52 header + 130 bottom + 10 padding + 80 legend/chart = 272 → use 290 with buffer. */
+  width: 100%;
+  height: auto;
   aspect-ratio: 1 / 1;
+  max-height: calc(100vh - 290px);
+  max-width: calc(100vh - 290px);
+  min-height: 0;
   border-radius: 8px;
   border: 1px solid #1e3a1e;
   display: block;
@@ -2109,38 +2112,7 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
 #draft-phase { flex: 1; overflow-y: auto; padding: 20px; }
 #role-assignment-phase { flex: 1; overflow-y: auto; padding: 20px; }
 
-/* ─── Real-time Scoreboard ──────────────────────────────── */
-.pbp-scoreboard {
-  display: flex;
-  flex-shrink: 0;
-  height: 44px;
-  background: #05080f;
-  border-top: 1px solid #1a2a1a;
-  border-bottom: 1px solid #1a2a1a;
-  overflow: hidden;
-  align-items: stretch;
-}
-.pbp-sb-side {
-  flex: 1;
-  display: flex;
-  align-items: stretch;
-  overflow: hidden;
-}
-.pbp-sb-sep { width: 1px; background: #1a3050; flex-shrink: 0; }
-.pbp-sb-row {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  padding: 0 6px;
-  flex: 1;
-  border-right: 1px solid #0d1a20;
-  font-size: 11px;
-}
-.pbp-sb-row:last-child { border-right: none; }
-.pbp-sb-dead { opacity: 0.35; }
-.pbp-sb-name { font-weight: 700; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 72px; flex: 1; }
-.pbp-sb-kda  { font-size: 11px; font-weight: 600; color: var(--text-hi); white-space: nowrap; padding: 0 5px; }
-.pbp-sb-gold { font-size: 11px; color: var(--gold); white-space: nowrap; }
+/* Scoreboard removed — KDA shown in side panels only */
 
 /* ─── Player Chat Feed ──────────────────────────────────── */
 .pbp-chat {
