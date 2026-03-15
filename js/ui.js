@@ -888,8 +888,10 @@ function initLiveStats(draft, blueName, redName) {
         <div class="lsp-info">
           <div class="lsp-name">${_escHtml(playerName || champName)}</div>
           <div class="lsp-champ">${_escHtml(champName)}</div>
+          <div class="lsp-items" id="lsp-items-${side[0]}-${pos || i}"></div>
         </div>
         <div class="lsp-right">
+          <div class="lsp-level" id="lsp-lv-${side[0]}-${pos || i}">Lv.1</div>
           <div class="lsp-kda" id="lsp-kda-${side[0]}-${pos || i}">0/0/0</div>
           <div class="lsp-gold" id="lsp-gold-${side[0]}-${pos || i}">0g</div>
         </div>
@@ -910,12 +912,23 @@ function updateLiveStats(agentStats) {
       const s = agentStats[side]?.[pos];
       if (!s) return;
       const pfx = side[0];
-      const kdaEl  = document.getElementById(`lsp-kda-${pfx}-${pos}`);
-      const goldEl = document.getElementById(`lsp-gold-${pfx}-${pos}`);
-      const rowEl  = document.getElementById(`lsp-${pfx}-${pos}`);
+      const kdaEl   = document.getElementById(`lsp-kda-${pfx}-${pos}`);
+      const goldEl  = document.getElementById(`lsp-gold-${pfx}-${pos}`);
+      const rowEl   = document.getElementById(`lsp-${pfx}-${pos}`);
+      const lvEl    = document.getElementById(`lsp-lv-${pfx}-${pos}`);
+      const itemsEl = document.getElementById(`lsp-items-${pfx}-${pos}`);
       if (kdaEl)  kdaEl.innerHTML = `<span style="color:#e8e8e8">${s.kills}</span>/<span style="color:#ff7b7b">${s.deaths}</span>/<span style="color:#4fc3f7">${s.assists}</span>`;
-      if (goldEl) goldEl.textContent = s.gold + 'g';
+      if (goldEl) goldEl.textContent = s.gold >= 1000 ? (s.gold/1000).toFixed(1)+'k' : s.gold+'g';
       if (rowEl)  rowEl.classList.toggle('lsp-dead', !!s.isDead);
+      if (lvEl)   lvEl.textContent = `Lv.${s.level || 1}`;
+      if (itemsEl && s.items) {
+        itemsEl.innerHTML = s.items.map(id => {
+          const item = typeof ITEM_MAP !== 'undefined' ? ITEM_MAP[id] : null;
+          const name = item ? item.name : id;
+          const abbr = name.split(' ').map(w=>w[0]).join('').slice(0,3).toUpperCase();
+          return `<span class="lsp-item" title="${_escHtml(name)}">${abbr}</span>`;
+        }).join('');
+      }
     });
   });
 }

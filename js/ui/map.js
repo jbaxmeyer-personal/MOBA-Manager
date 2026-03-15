@@ -1,37 +1,24 @@
 // js/ui/map.js — Grove Manager map visualization
-// Driven by real champion positions from simulation events (ev.positions).
-// Positions are live (x,y) coordinates in 0-300 space from the tick engine.
-// Exposes three globals: initMapVisualization(), updateMap(ev), setMapSkipMode(bool)
+// Champion positions come ONLY from real simulation events (ev.positions).
+// No wander, no jitter. CSS transitions handle smooth movement.
 
 (function () {
   'use strict';
 
   const POSITIONS = ['vanguard', 'ranger', 'arcanist', 'hunter', 'warden'];
 
-  // ── Module state ─────────────────────────────────────────────────────────────
+  let _skipMode = false;
+  let _ringRaf  = null;
 
-  let _skipMode      = false;
-  let _wanderInterval = null;
-  let _ringRaf        = null;
-
-  // Spawn positions matching simulation.js SPAWN constants (for init and reset)
+  // Spawn positions matching SPAWN constants in simulation.js
   const _SPAWN_POS = {
-    blue: { vanguard:{x:18,y:270}, ranger:{x:24,y:276}, arcanist:{x:22,y:278},
-            hunter:{x:28,y:274},   warden:{x:22,y:283} },
-    red:  { vanguard:{x:282,y:30}, ranger:{x:276,y:24}, arcanist:{x:278,y:22},
-            hunter:{x:272,y:26},   warden:{x:278,y:17} },
+    blue: { vanguard:{x:22,y:278}, ranger:{x:27,y:273}, arcanist:{x:24,y:276},
+            hunter:{x:19,y:274},   warden:{x:16,y:270} },
+    red:  { vanguard:{x:278,y:22}, ranger:{x:273,y:27}, arcanist:{x:276,y:24},
+            hunter:{x:281,y:26},   warden:{x:284,y:30} },
   };
 
-  // Base anchor per dot — wander drifts around the last received real position
-  const _base = {
-    blue: { ...Object.fromEntries(POSITIONS.map(p => [p, {..._SPAWN_POS.blue[p]}])) },
-    red:  { ...Object.fromEntries(POSITIONS.map(p => [p, {..._SPAWN_POS.red[p]}])) },
-  };
-
-  // Wander radius per role (tight — real positions are the truth)
-  const _wRadius = { vanguard:4, ranger:5, arcanist:4, hunter:3, warden:3 };
-
-  // Dead status (used to suppress wander for dead dots)
+  // Dead status per champion
   const _dead = {
     blue: { vanguard:false, ranger:false, arcanist:false, hunter:false, warden:false },
     red:  { vanguard:false, ranger:false, arcanist:false, hunter:false, warden:false },
@@ -47,36 +34,33 @@
       reviveDot('blue', pos);
       reviveDot('red',  pos);
     });
-    // Reset all dots to spawn positions — real positions arrive with first event
+    // Place all dots at spawn positions
     const initPos = { blue:{}, red:{} };
     POSITIONS.forEach(pos => {
-      initPos.blue[pos] = { ..._SPAWN_POS.blue[pos], alive: true };
-      initPos.red[pos]  = { ..._SPAWN_POS.red[pos],  alive: true };
+      initPos.blue[pos] = { ..._SPAWN_POS.blue[pos], alive: true, hp: 1, maxHp: 1 };
+      initPos.red[pos]  = { ..._SPAWN_POS.red[pos],  alive: true, hp: 1, maxHp: 1 };
     });
+    // Suppress transitions during init
+    const allGroups = document.querySelectorAll('.map-agent-group');
+    allGroups.forEach(g => g.classList.add('no-transition'));
     applyPositions(initPos);
-    startWander();
+    requestAnimationFrame(() => {
+      allGroups.forEach(g => g.classList.remove('no-transition'));
+    });
   };
 
   window.updateMap = function (ev) {
     if (!ev || ev.type === 'header') return;
-
-    // Apply real champion positions from simulation
-    if (ev.positions) {
-      applyPositions(ev.positions);
-    }
-
-    // Flash ring at the event's focal point
-    if (!_skipMode) {
-      flashForEvent(ev);
-    }
+    if (ev.positions) applyPositions(ev.positions);
+    if (!_skipMode)   flashForEvent(ev);
+    // Update objective HP bars if snapshot includes objectives
+    if (ev.objectives) updateObjectiveHP(ev.objectives);
   };
 
   window.setMapSkipMode = function (skip) {
     _skipMode = skip;
     const svg = document.getElementById('pbp-map-svg');
     if (svg) svg.classList.toggle('map-skip', skip);
-    if (skip) stopWander();
-    else      startWander();
   };
 
   // ── Position Application ─────────────────────────────────────────────────────
@@ -89,8 +73,7 @@
         if (!data) return;
         const x = Math.round(data.x);
         const y = Math.round(data.y);
-        moveDot(side, pos, x, y);
-        _base[side][pos] = { x, y };
+        moveGroup(side, pos, x, y);
         if (data.alive === false) {
           _dead[side][pos] = true;
           markDead(side, pos);
@@ -98,7 +81,32 @@
           _dead[side][pos] = false;
           reviveDot(side, pos);
         }
+        // Update HP ring
+        if (data.hp !== undefined && data.maxHp !== undefined && data.maxHp > 0) {
+          updateHpRing(side, pos, data.hp / data.maxHp);
+        }
       });
+    });
+  }
+
+  // ── Objective HP ─────────────────────────────────────────────────────────────
+
+  function updateObjectiveHP(objectives) {
+    objectives.forEach(o => {
+      const bar = document.getElementById(`obj-hp-${o.id}`);
+      if (!bar) return;
+      if (o.destroyed || o.tempDown) {
+        bar.style.opacity = '0.2';
+        bar.setAttribute('width', '0');
+      } else {
+        const pct = Math.max(0, o.hp / o.maxHp);
+        const fullW = parseFloat(bar.dataset.maxw || '20');
+        bar.setAttribute('width', (pct * fullW).toFixed(1));
+        bar.style.opacity = '1';
+      }
+      // Grey out destroyed structures
+      const struct = document.getElementById(`obj-${o.id}`);
+      if (struct) struct.classList.toggle('map-obj-dead', !!(o.destroyed || o.tempDown));
     });
   }
 
@@ -106,28 +114,24 @@
 
   function flashForEvent(ev) {
     let cx, cy, color;
-
     if (ev.wardenBlue !== undefined || ev.wardenRed !== undefined) {
-      // Warden positions from OBJ_DEFS: warden_b(80,80) warden_r(220,220)
-      cx = ev.wardenBlue ? 80 : 220; cy = ev.wardenBlue ? 80 : 220; color = '#9b59b6';
+      cx = 148; cy = 148; color = '#9b59b6';
     } else if (ev.shrineBlue !== undefined || ev.shrineRed !== undefined) {
-      // Shrine positions: shrine_a(80,80) shrine_b(220,220)
-      cx = ev.shrineBlue ? 80 : 220; cy = ev.shrineBlue ? 80 : 220; color = '#c89b3c';
+      const isBlueSide = ev.shrineBlue;
+      cx = isBlueSide ? 88 : 212; cy = isBlueSide ? 108 : 192; color = '#c89b3c';
     } else if (ev.type === 'result') {
       const blueWon = (ev.advAfter || 50) >= 50;
       cx = blueWon ? 35  : 265;
       cy = blueWon ? 265 : 35;
       color = blueWon ? '#4fc3f7' : '#ff7b7b';
     } else if (ev.type === 'teamfight' || ev.type === 'kill' || ev.type === 'objective') {
-      // Flash at the centroid of all champion positions in this event
       const c = getCentroid(ev.positions);
       cx = c.x; cy = c.y;
       color = (ev.killBlue === true || ev.towerBlue === true || ev.tfBlueKills > (ev.tfRedKills || 0))
         ? '#4fc3f7' : '#ff7b7b';
     } else {
-      return; // commentary — no flash
+      return;
     }
-
     flashRing(cx, cy, color);
   }
 
@@ -162,59 +166,35 @@
     _ringRaf = requestAnimationFrame(step);
   }
 
-  // ── Dot Helpers ──────────────────────────────────────────────────────────────
+  // ── Group / Dot Helpers ───────────────────────────────────────────────────────
 
-  function moveDot(side, pos, x, y) {
+  function moveGroup(side, pos, x, y) {
     const pfx = side[0];
-    const dot = document.getElementById(`map-${pfx}-${pos}`);
-    const lbl = document.getElementById(`map-${pfx}-${pos}-lbl`);
-    if (dot) { dot.setAttribute('cx', x); dot.setAttribute('cy', y); }
-    if (lbl) { lbl.setAttribute('x', x); lbl.setAttribute('y', y + 4); }
+    const grp = document.getElementById(`map-g-${pfx}-${pos}`);
+    if (grp) grp.setAttribute('transform', `translate(${x},${y})`);
+  }
+
+  function updateHpRing(side, pos, hpPct) {
+    const pfx = side[0];
+    const ring = document.getElementById(`map-hp-${pfx}-${pos}`);
+    if (!ring) return;
+    const circ = 56.5; // 2π × 9
+    const dash = Math.max(0, Math.min(circ, hpPct * circ));
+    ring.setAttribute('stroke-dasharray', `${dash.toFixed(1)} ${circ}`);
+    // Color: green > 60%, yellow 30-60%, red < 30%
+    ring.setAttribute('stroke', hpPct > 0.6 ? '#4caf50' : hpPct > 0.3 ? '#ffeb3b' : '#f44336');
   }
 
   function markDead(side, pos) {
     const pfx = side[0];
-    const dot = document.getElementById(`map-${pfx}-${pos}`);
-    const lbl = document.getElementById(`map-${pfx}-${pos}-lbl`);
-    if (dot) dot.classList.add('map-dot-dead');
-    if (lbl) lbl.classList.add('map-dot-dead');
+    const grp = document.getElementById(`map-g-${pfx}-${pos}`);
+    if (grp) grp.classList.add('map-dot-dead');
   }
 
   function reviveDot(side, pos) {
     const pfx = side[0];
-    const dot = document.getElementById(`map-${pfx}-${pos}`);
-    const lbl = document.getElementById(`map-${pfx}-${pos}-lbl`);
-    if (dot) dot.classList.remove('map-dot-dead');
-    if (lbl) lbl.classList.remove('map-dot-dead');
-  }
-
-  // ── Wander Animation ─────────────────────────────────────────────────────────
-  // Alive dots drift slightly around their last base position between events,
-  // giving the FM-style "always moving" feel.
-
-  function startWander() {
-    stopWander();
-    _wanderInterval = setInterval(wanderTick, 300);
-  }
-
-  function stopWander() {
-    if (_wanderInterval) { clearInterval(_wanderInterval); _wanderInterval = null; }
-  }
-
-  function wanderTick() {
-    if (_skipMode) return;
-    ['blue', 'red'].forEach(side => {
-      POSITIONS.forEach(pos => {
-        if (_dead[side][pos]) return;
-        const base = _base[side][pos];
-        const r    = _wRadius[pos] || 8;
-        const angle = Math.random() * Math.PI * 2;
-        const dist  = Math.random() * r;
-        const nx = Math.round(base.x + Math.cos(angle) * dist);
-        const ny = Math.round(base.y + Math.sin(angle) * dist);
-        moveDot(side, pos, nx, ny);
-      });
-    });
+    const grp = document.getElementById(`map-g-${pfx}-${pos}`);
+    if (grp) grp.classList.remove('map-dot-dead');
   }
 
 })();

@@ -42,45 +42,48 @@ const SPAWN = {
 // Where each role walks during the laning phase
 const LANE_POS = {
   blue: {
-    vanguard: { x: 45,  y: 200 },
-    ranger:   { x: 80,  y: 210 },
-    arcanist: { x:120,  y: 190 },
-    hunter:   { x:130,  y: 252 },
-    warden:   { x:115,  y: 255 },
+    vanguard: { x: 35,  y: 150 },   // top lane — left edge midpoint
+    ranger:   { x: 88,  y: 108 },   // blue jungle
+    arcanist: { x: 115, y: 185 },   // mid lane blue side
+    hunter:   { x: 165, y: 265 },   // bot lane — bottom edge
+    warden:   { x: 142, y: 265 },   // bot lane support
   },
   red: {
-    vanguard: { x:255, y: 100 },
-    ranger:   { x:220, y:  90 },
-    arcanist: { x:180, y: 110 },
-    hunter:   { x:170, y:  48 },
-    warden:   { x:185, y:  45 },
+    vanguard: { x: 150, y: 35  },   // top lane — top edge midpoint
+    ranger:   { x: 212, y: 192 },   // red jungle
+    arcanist: { x: 185, y: 115 },   // mid lane red side
+    hunter:   { x: 265, y: 165 },   // bot lane — right edge
+    warden:   { x: 265, y: 142 },   // bot lane support
   },
 };
 
 // Objectives
 const OBJ_DEFS = [
-  { id:'b_outer',   side:'blue',    type:'root',    x: 95, y:205, maxHp: 4000, atkDmg: 8, atkRange:32 },
-  { id:'b_inner',   side:'blue',    type:'root',    x: 65, y:235, maxHp: 5500, atkDmg:12, atkRange:32 },
-  { id:'b_heart',   side:'blue',    type:'root',    x: 40, y:258, maxHp: 7000, atkDmg:18, atkRange:32 },
+  // Blue defensive structures (along bot lane and near base)
+  { id:'b_outer',   side:'blue',    type:'root',    x:190, y:265, maxHp: 4000, atkDmg: 8, atkRange:32 },
+  { id:'b_inner',   side:'blue',    type:'root',    x:105, y:265, maxHp: 5500, atkDmg:12, atkRange:32 },
+  { id:'b_heart',   side:'blue',    type:'root',    x: 35, y:100, maxHp: 7000, atkDmg:18, atkRange:32 },
   { id:'b_ancient', side:'blue',    type:'ancient', x: 22, y:278, maxHp:12000, atkDmg:25, atkRange:36 },
-  { id:'r_outer',   side:'red',     type:'root',    x:205, y: 95, maxHp: 4000, atkDmg: 8, atkRange:32 },
-  { id:'r_inner',   side:'red',     type:'root',    x:235, y: 65, maxHp: 5500, atkDmg:12, atkRange:32 },
-  { id:'r_heart',   side:'red',     type:'root',    x:258, y: 40, maxHp: 7000, atkDmg:18, atkRange:32 },
+  // Red defensive structures (along top lane and near base)
+  { id:'r_outer',   side:'red',     type:'root',    x:265, y:110, maxHp: 4000, atkDmg: 8, atkRange:32 },
+  { id:'r_inner',   side:'red',     type:'root',    x:110, y: 35, maxHp: 5500, atkDmg:12, atkRange:32 },
+  { id:'r_heart',   side:'red',     type:'root',    x:265, y:190, maxHp: 7000, atkDmg:18, atkRange:32 },
   { id:'r_ancient', side:'red',     type:'ancient', x:278, y: 22, maxHp:12000, atkDmg:25, atkRange:36 },
-  { id:'shrine_a',  side:'neutral', type:'shrine',  x: 80, y: 80, maxHp: 2000, atkDmg: 0, atkRange: 0 },
-  { id:'shrine_b',  side:'neutral', type:'shrine',  x:220, y:220, maxHp: 2000, atkDmg: 0, atkRange: 0 },
-  { id:'warden_b',  side:'neutral', type:'warden',  x: 80, y: 80, maxHp: 5000, atkDmg: 6, atkRange:28 },
-  { id:'warden_r',  side:'neutral', type:'warden',  x:220, y:220, maxHp: 5000, atkDmg: 6, atkRange:28 },
+  // Neutral objectives
+  { id:'shrine_a',  side:'neutral', type:'shrine',  x: 88, y:108, maxHp: 2000, atkDmg: 0, atkRange: 0 },
+  { id:'shrine_b',  side:'neutral', type:'shrine',  x:212, y:192, maxHp: 2000, atkDmg: 0, atkRange: 0 },
+  { id:'warden_b',  side:'neutral', type:'warden',  x:138, y:148, maxHp: 5000, atkDmg: 6, atkRange:28 },
+  { id:'warden_r',  side:'neutral', type:'warden',  x:162, y:152, maxHp: 5000, atkDmg: 6, atkRange:28 },
 ];
 
 // Jungle camps
 const JUNGLE_DEF = [
-  { id:'bjc1', side:'blue', large:false, x:102, y:218, maxHp:400, xp:XP_JG_SM, gold:30, respawn:20 },
-  { id:'bjc2', side:'blue', large:false, x: 68, y:188, maxHp:400, xp:XP_JG_SM, gold:30, respawn:20 },
-  { id:'bjcL', side:'blue', large:true,  x: 82, y:202, maxHp:700, xp:XP_JG_LG, gold:60, respawn:30 },
-  { id:'rjc1', side:'red',  large:false, x:198, y: 82, maxHp:400, xp:XP_JG_SM, gold:30, respawn:20 },
-  { id:'rjc2', side:'red',  large:false, x:232, y:112, maxHp:400, xp:XP_JG_SM, gold:30, respawn:20 },
-  { id:'rjcL', side:'red',  large:true,  x:218, y: 98, maxHp:700, xp:XP_JG_LG, gold:60, respawn:30 },
+  { id:'bjc1', side:'blue', large:false, x: 75, y:140, maxHp:400, xp:XP_JG_SM, gold:30, respawn:20 },
+  { id:'bjc2', side:'blue', large:false, x:108, y: 82, maxHp:400, xp:XP_JG_SM, gold:30, respawn:20 },
+  { id:'bjcL', side:'blue', large:true,  x: 85, y:108, maxHp:700, xp:XP_JG_LG, gold:60, respawn:30 },
+  { id:'rjc1', side:'red',  large:false, x:225, y:160, maxHp:400, xp:XP_JG_SM, gold:30, respawn:20 },
+  { id:'rjc2', side:'red',  large:false, x:192, y:218, maxHp:400, xp:XP_JG_SM, gold:30, respawn:20 },
+  { id:'rjcL', side:'red',  large:true,  x:215, y:192, maxHp:700, xp:XP_JG_LG, gold:60, respawn:30 },
 ];
 
 // ─── Agent initialisation ─────────────────────────────────────────────────────
@@ -293,7 +296,7 @@ function decideAction(agent, allies, enemies, objs, jungles, tick, phase) {
       ? ['r_outer','r_inner','r_heart','r_ancient']
       : ['b_outer','b_inner','b_heart','b_ancient'];
     const nextObj = objs.find(o => seq.includes(o.id) && !o.destroyed);
-    if (nextObj && dist(agent, nextObj) < 140) {
+    if (nextObj && dist(agent, nextObj) < 180) {
       agent.state  = 'contesting';
       agent.target = { type:'objective', ref: nextObj };
       return;
@@ -302,7 +305,7 @@ function decideAction(agent, allies, enemies, objs, jungles, tick, phase) {
 
   // 7. Shrine contestation (mid-game)
   if (phase >= 1 && gameSense > 9) {
-    const shrine = objs.find(o => o.type === 'shrine' && !o.tempDown && dist(agent, o) < 80);
+    const shrine = objs.find(o => o.type === 'shrine' && !o.tempDown && dist(agent, o) < 65);
     if (shrine) {
       agent.state  = 'contesting';
       agent.target = { type:'objective', ref: shrine };
@@ -311,8 +314,8 @@ function decideAction(agent, allies, enemies, objs, jungles, tick, phase) {
   }
 
   // 8. Warden opportunity
-  if (agent.hp / agent.maxHp > 0.50) {
-    const myWarden = objs.find(o => o.type === 'warden' && !o.tempDown && dist(agent, o) < 45);
+  if (agent.hp / agent.maxHp > 0.35) {
+    const myWarden = objs.find(o => o.type === 'warden' && !o.tempDown && dist(agent, o) < 55);
     if (myWarden) {
       agent.state  = 'contesting';
       agent.target = { type:'warden', ref: myWarden };
@@ -651,7 +654,11 @@ function buildSnapshot(tick, agents, objs, score) {
 function posMap(agents) {
   const m = { blue:{}, red:{} };
   agents.forEach(ag => {
-    m[ag.side][ag.pos] = { x: Math.round(ag.x), y: Math.round(ag.y), alive: !ag.isDead };
+    m[ag.side][ag.pos] = {
+      x: Math.round(ag.x), y: Math.round(ag.y),
+      alive: !ag.isDead,
+      hp: Math.round(ag.hp), maxHp: ag.maxHp,
+    };
   });
   return m;
 }
@@ -777,6 +784,10 @@ function simulateMatch(blueTeamArr, redTeamArr, blueName, redName, preDraft) {
       tick, type: 'move',
       time: fmtTime(tick),
       positions: posMap(all),
+      objectives: objs.map(o => ({
+        id: o.id, hp: Math.max(0, o.hp), maxHp: o.maxHp,
+        destroyed: !!o.destroyed, tempDown: !!o.tempDown,
+      })),
       blueKills: score.blueKills, redKills: score.redKills,
       blueShrines: score.blueShrines, redShrines: score.redShrines,
       blueRoots: score.blueRoots, redRoots: score.redRoots,
@@ -902,11 +913,13 @@ function agentStatsMap(agents) {
   const m = { blue: {}, red: {} };
   agents.forEach(ag => {
     m[ag.side][ag.pos] = {
-      kills:   ag.kills  || 0,
-      deaths:  ag.deaths || 0,
+      kills:   ag.kills   || 0,
+      deaths:  ag.deaths  || 0,
       assists: ag.assists || 0,
       gold:    Math.round(ag.gold || 0),
       isDead:  !!ag.isDead,
+      level:   ag.level   || 1,
+      items:   [...(ag.items || [])],
     };
   });
   return m;

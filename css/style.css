@@ -581,42 +581,50 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
   display: flex;
   flex-direction: column;
 }
-/* Player dots */
+/* ── Map agent groups ─────────────────────────────────────────────────── */
+.map-agent-group {
+  transition: transform 0.4s ease-out;
+}
+.map-agent-group.no-transition {
+  transition: none !important;
+}
+.map-agent-group.map-dot-dead {
+  opacity: 0.25;
+}
 .map-dot {
-  transition: cx 0.75s cubic-bezier(0.4,0,0.2,1),
-              cy 0.75s cubic-bezier(0.4,0,0.2,1),
-              opacity 0.4s ease;
+  stroke-width: 1.5;
 }
 .map-dot-blue {
-  fill: #4fc3f7;
-  stroke: #083050;
-  stroke-width: 2;
+  fill: #1a6ab5;
+  stroke: #4fc3f7;
 }
 .map-dot-red {
-  fill: #ff7b7b;
-  stroke: #500808;
-  stroke-width: 2;
+  fill: #b51a1a;
+  stroke: #ff7b7b;
 }
-.map-dot.map-dot-dead {
-  opacity: 0.15;
-  fill: #444 !important;
-}
-/* Labels */
 .map-dot-lbl {
-  font-size: 8px;
-  font-weight: 800;
-  fill: #05090f;
+  font-size: 7px;
+  font-weight: bold;
+  fill: #fff;
   text-anchor: middle;
-  dominant-baseline: middle;
   pointer-events: none;
-  transition: x 0.75s cubic-bezier(0.4,0,0.2,1),
-              y 0.75s cubic-bezier(0.4,0,0.2,1),
-              opacity 0.4s ease;
+  dominant-baseline: middle;
 }
-.map-dot-lbl.map-dot-dead { opacity: 0.1; }
+.map-agent-name {
+  font-size: 5px;
+  fill: #cce8ff;
+  text-anchor: middle;
+  pointer-events: none;
+}
+.map-hp-ring {
+  stroke-linecap: round;
+  fill: none;
+}
+.map-obj-dead {
+  opacity: 0.2 !important;
+}
 /* Skip mode: disable transitions for instant skip */
-.pbp-map-svg.map-skip .map-dot,
-.pbp-map-svg.map-skip .map-dot-lbl { transition: none !important; }
+.pbp-map-svg.map-skip .map-agent-group { transition: none !important; }
 /* Legend */
 .pbp-map-legend {
   display: flex;
@@ -1220,3 +1228,26 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
 .lsp-kda { font-size: 11px; white-space: nowrap; }
 .lsp-gold { color: var(--gold); font-size: 10px; }
 .lsp-divider { height: 1px; background: var(--border2); margin: 4px 0; }
+.lsp-item {
+  display: inline-block;
+  background: #2a3a4a;
+  color: #c89b3c;
+  font-size: 9px;
+  padding: 1px 3px;
+  border-radius: 3px;
+  margin-right: 2px;
+  border: 1px solid #3a5a6a;
+  font-weight: bold;
+}
+.lsp-level {
+  font-size: 10px;
+  color: #c89b3c;
+  font-weight: bold;
+  margin-bottom: 1px;
+}
+.lsp-items {
+  margin-top: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1px;
+}

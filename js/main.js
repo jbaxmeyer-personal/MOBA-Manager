@@ -164,6 +164,21 @@ function onStartMatch() {
   }
   _updateMatchScore(0, 0, 0, 0, 0, 0, 50);
   startPBP(_matchResult.events);
+  // Set player names on map dots after map is initialized
+  if (_matchContext?.draft) {
+    ['blue','red'].forEach(side => {
+      const picks = _matchContext.draft[side] || [];
+      picks.forEach((p, i) => {
+        const pos = POSITIONS[i];
+        const pfx = side[0];
+        const el = document.getElementById(`map-name-${pfx}-${pos}`);
+        if (el) {
+          const name = typeof p === 'string' ? p : (p.player?.name || p.champion || '');
+          el.textContent = name.length > 8 ? name.slice(0,7)+'.' : name;
+        }
+      });
+    });
+  }
 }
 
 function onSkipMatch() {

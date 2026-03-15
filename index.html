@@ -228,85 +228,204 @@
     <div class="pbp-body-wrap">
       <div class="pbp-map-wrap">
         <svg id="pbp-map-svg" class="pbp-map-svg" viewBox="0 0 300 300">
-          <!-- LoL-style Summoner's Rift map — Blue base bottom-left, Red base top-right -->
-          <!-- Background -->
-          <rect width="300" height="300" fill="#0a1a0a"/>
-          <!-- Jungle areas (dark green fills) -->
-          <!-- Top-left jungle -->
-          <polygon points="35,265 35,50 150,150" fill="#0d2010" opacity="0.9"/>
-          <!-- Bot-right jungle -->
-          <polygon points="265,35 265,265 150,150" fill="#0d2010" opacity="0.9"/>
-          <!-- Lane base layer (wide dark paths) -->
-          <!-- Top lane: left edge + top edge -->
-          <polyline points="35,265 35,50 265,35" fill="none" stroke="#112211" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- Bot lane: bottom edge + right edge -->
-          <polyline points="35,265 265,265 265,35" fill="none" stroke="#112211" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
-          <!-- Mid lane diagonal -->
-          <line x1="35" y1="265" x2="265" y2="35" stroke="#112211" stroke-width="24" stroke-linecap="round"/>
-          <!-- Lane surface (lighter paths) -->
-          <polyline points="35,265 35,50 265,35" fill="none" stroke="#1e3a1a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-          <polyline points="35,265 265,265 265,35" fill="none" stroke="#1e3a1a" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="35" y1="265" x2="265" y2="35" stroke="#1e3a1a" stroke-width="10" stroke-linecap="round"/>
-          <!-- River (diagonal overlay on mid lane) -->
-          <line x1="35" y1="265" x2="265" y2="35" stroke="#0a2a30" stroke-width="18" stroke-linecap="round" opacity="0.5"/>
-          <!-- Top-left jungle objective (Ley Shrine / Baron) -->
-          <circle cx="80" cy="80" r="14" fill="#16130a" stroke="#c89b3c" stroke-width="2"/>
-          <circle cx="80" cy="80" r="7" fill="none" stroke="#c89b3c" stroke-width="1" opacity="0.5"/>
-          <text x="80" y="100" text-anchor="middle" font-size="6" fill="#c89b3c" font-weight="bold">SHRINE</text>
-          <!-- Bot-right jungle objective -->
-          <circle cx="220" cy="220" r="14" fill="#16130a" stroke="#8bc34a" stroke-width="2"/>
-          <circle cx="220" cy="220" r="7" fill="none" stroke="#8bc34a" stroke-width="1" opacity="0.5"/>
-          <text x="220" y="240" text-anchor="middle" font-size="6" fill="#8bc34a" font-weight="bold">SHRINE</text>
-          <!-- Blue turrets along lanes (small teal rectangles) -->
-          <!-- Top lane turrets -->
-          <rect x="29" y="180" width="12" height="12" rx="2" fill="#0d2a4a" stroke="#4fc3f7" stroke-width="1.5"/>
-          <rect x="29" y="130" width="12" height="12" rx="2" fill="#0d2a4a" stroke="#4fc3f7" stroke-width="1.5"/>
-          <!-- Mid lane turret -->
-          <rect x="65" y="220" width="12" height="12" rx="2" fill="#0d2a4a" stroke="#4fc3f7" stroke-width="1.5"/>
-          <!-- Red turrets along lanes -->
-          <rect x="259" y="108" width="12" height="12" rx="2" fill="#2a0d0d" stroke="#ff7b7b" stroke-width="1.5"/>
-          <rect x="259" y="158" width="12" height="12" rx="2" fill="#2a0d0d" stroke="#ff7b7b" stroke-width="1.5"/>
-          <!-- Mid lane turret red -->
-          <rect x="222" y="67" width="12" height="12" rx="2" fill="#2a0d0d" stroke="#ff7b7b" stroke-width="1.5"/>
-          <!-- Blue Nexus (bottom-left) -->
-          <circle cx="35" cy="265" r="20" fill="#0a1a2a" stroke="#1e3050" stroke-width="2"/>
-          <circle cx="35" cy="265" r="12" fill="#0d2040" stroke="#4fc3f7" stroke-width="2" opacity="0.9"/>
-          <circle cx="35" cy="265" r="6" fill="#4fc3f7" opacity="0.3"/>
-          <text x="35" y="270" text-anchor="middle" font-size="6" fill="#4fc3f7" font-weight="bold">NEXUS</text>
-          <!-- Red Nexus (top-right) -->
-          <circle cx="265" cy="35" r="20" fill="#2a0a0a" stroke="#501e1e" stroke-width="2"/>
-          <circle cx="265" cy="35" r="12" fill="#401010" stroke="#ff7b7b" stroke-width="2" opacity="0.9"/>
-          <circle cx="265" cy="35" r="6" fill="#ff7b7b" opacity="0.3"/>
-          <text x="265" y="40" text-anchor="middle" font-size="6" fill="#ff7b7b" font-weight="bold">NEXUS</text>
-          <!-- Event ring -->
+          <!-- ── Background ──────────────────────────────────────────────────── -->
+          <defs>
+            <radialGradient id="map-bg-grad" cx="50%" cy="50%" r="70%">
+              <stop offset="0%"   stop-color="#0e2010"/>
+              <stop offset="100%" stop-color="#071208"/>
+            </radialGradient>
+          </defs>
+          <rect width="300" height="300" fill="url(#map-bg-grad)"/>
+
+          <!-- ── Jungle fill areas ────────────────────────────────────────────── -->
+          <!-- Blue jungle: upper-left triangle between top lane and mid -->
+          <polygon points="35,35 35,200 150,150 100,35" fill="#0b1f0c" opacity="0.85"/>
+          <!-- Red jungle: lower-right triangle between mid and bot lane -->
+          <polygon points="265,265 265,100 150,150 200,265" fill="#0b1f0c" opacity="0.85"/>
+
+          <!-- ── Lane base (wide dark path) ────────────────────────────────── -->
+          <!-- Top lane -->
+          <polyline points="35,265 35,35 265,35" fill="none" stroke="#152815" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Bot lane -->
+          <polyline points="35,265 265,265 265,35" fill="none" stroke="#152815" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Mid lane -->
+          <line x1="35" y1="265" x2="265" y2="35" stroke="#152815" stroke-width="28" stroke-linecap="round"/>
+
+          <!-- ── Lane surface (sandy path) ──────────────────────────────────── -->
+          <polyline points="35,265 35,35 265,35" fill="none" stroke="#2a4a1a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="35,265 265,265 265,35" fill="none" stroke="#2a4a1a" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+          <line x1="35" y1="265" x2="265" y2="35" stroke="#2a4a1a" stroke-width="14" stroke-linecap="round"/>
+          <!-- Lane highlight -->
+          <polyline points="35,265 35,35 265,35" fill="none" stroke="#3a6228" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+          <polyline points="35,265 265,265 265,35" fill="none" stroke="#3a6228" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+          <line x1="35" y1="265" x2="265" y2="35" stroke="#3a6228" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+
+          <!-- ── River ─────────────────────────────────────────────────────── -->
+          <line x1="80" y1="220" x2="220" y2="80" stroke="#0a2a35" stroke-width="22" stroke-linecap="round" opacity="0.6"/>
+          <line x1="80" y1="220" x2="220" y2="80" stroke="#0d3a4a" stroke-width="10" stroke-linecap="round" opacity="0.4"/>
+
+          <!-- ── Blue Nexus (bottom-left) ───────────────────────────────────── -->
+          <circle cx="35" cy="265" r="22" fill="#081520" stroke="#1a3060" stroke-width="2"/>
+          <circle cx="35" cy="265" r="14" fill="#0d2545" stroke="#4fc3f7" stroke-width="2.5"/>
+          <circle cx="35" cy="265" r="7"  fill="#4fc3f7" opacity="0.35"/>
+          <text x="35" y="269" text-anchor="middle" font-size="5" fill="#4fc3f7" font-weight="bold" letter-spacing="0.5">NEXUS</text>
+
+          <!-- ── Red Nexus (top-right) ──────────────────────────────────────── -->
+          <circle cx="265" cy="35" r="22" fill="#200808" stroke="#601a1a" stroke-width="2"/>
+          <circle cx="265" cy="35" r="14" fill="#450d0d" stroke="#ff7b7b" stroke-width="2.5"/>
+          <circle cx="265" cy="35" r="7"  fill="#ff7b7b" opacity="0.35"/>
+          <text x="265" y="39" text-anchor="middle" font-size="5" fill="#ff7b7b" font-weight="bold" letter-spacing="0.5">NEXUS</text>
+
+          <!-- ── Blue turrets (defend along bot lane and base) ──────────────── -->
+          <!-- Blue outer bot turret -->
+          <g id="obj-b_outer">
+            <rect x="183" y="258" width="14" height="14" rx="2" fill="#0a2040" stroke="#4fc3f7" stroke-width="1.5"/>
+            <line x1="190" y1="252" x2="190" y2="258" stroke="#4fc3f7" stroke-width="1.5"/>
+            <rect x="187" y="248" width="6" height="5" rx="1" fill="#4fc3f7" opacity="0.7"/>
+            <rect x="183" y="270" width="14" height="3" rx="1" fill="#152a10" id="obj-hp-b_outer" data-maxw="14"/>
+          </g>
+          <!-- Blue inner bot turret -->
+          <g id="obj-b_inner">
+            <rect x="98" y="258" width="14" height="14" rx="2" fill="#0a2040" stroke="#4fc3f7" stroke-width="1.5"/>
+            <line x1="105" y1="252" x2="105" y2="258" stroke="#4fc3f7" stroke-width="1.5"/>
+            <rect x="102" y="248" width="6" height="5" rx="1" fill="#4fc3f7" opacity="0.7"/>
+            <rect x="98" y="270" width="14" height="3" rx="1" fill="#152a10" id="obj-hp-b_inner" data-maxw="14"/>
+          </g>
+          <!-- Blue top outer turret -->
+          <g id="obj-b_heart">
+            <rect x="28" y="95" width="14" height="14" rx="2" fill="#0a2040" stroke="#4fc3f7" stroke-width="1.5"/>
+            <line x1="35" y1="89" x2="35" y2="95" stroke="#4fc3f7" stroke-width="1.5"/>
+            <rect x="32" y="85" width="6" height="5" rx="1" fill="#4fc3f7" opacity="0.7"/>
+            <rect x="28" y="107" width="14" height="3" rx="1" fill="#152a10" id="obj-hp-b_heart" data-maxw="14"/>
+          </g>
+
+          <!-- ── Red turrets ──────────────────────────────────────────────── -->
+          <!-- Red outer top turret -->
+          <g id="obj-r_outer">
+            <rect x="258" y="108" width="14" height="14" rx="2" fill="#200a0a" stroke="#ff7b7b" stroke-width="1.5"/>
+            <line x1="265" y1="102" x2="265" y2="108" stroke="#ff7b7b" stroke-width="1.5"/>
+            <rect x="262" y="98" width="6" height="5" rx="1" fill="#ff7b7b" opacity="0.7"/>
+            <rect x="258" y="120" width="14" height="3" rx="1" fill="#2a1010" id="obj-hp-r_outer" data-maxw="14"/>
+          </g>
+          <!-- Red inner top turret -->
+          <g id="obj-r_inner">
+            <rect x="103" y="28" width="14" height="14" rx="2" fill="#200a0a" stroke="#ff7b7b" stroke-width="1.5"/>
+            <line x1="110" y1="22" x2="110" y2="28" stroke="#ff7b7b" stroke-width="1.5"/>
+            <rect x="107" y="18" width="6" height="5" rx="1" fill="#ff7b7b" opacity="0.7"/>
+            <rect x="103" y="40" width="14" height="3" rx="1" fill="#2a1010" id="obj-hp-r_inner" data-maxw="14"/>
+          </g>
+          <!-- Red bot outer turret -->
+          <g id="obj-r_heart">
+            <rect x="258" y="183" width="14" height="14" rx="2" fill="#200a0a" stroke="#ff7b7b" stroke-width="1.5"/>
+            <line x1="265" y1="177" x2="265" y2="183" stroke="#ff7b7b" stroke-width="1.5"/>
+            <rect x="262" y="173" width="6" height="5" rx="1" fill="#ff7b7b" opacity="0.7"/>
+            <rect x="258" y="195" width="14" height="3" rx="1" fill="#2a1010" id="obj-hp-r_heart" data-maxw="14"/>
+          </g>
+
+          <!-- ── Shrine A — Dragon (blue jungle, top-left area) ─────────────── -->
+          <g id="obj-shrine_a">
+            <circle cx="88" cy="108" r="11" fill="#1a1400" stroke="#c89b3c" stroke-width="2"/>
+            <polygon points="88,100 95,113 81,113" fill="none" stroke="#c89b3c" stroke-width="1.2" opacity="0.8"/>
+            <text x="88" y="128" text-anchor="middle" font-size="5" fill="#c89b3c">SHRINE</text>
+            <rect x="78" y="121" width="20" height="3" rx="1" fill="#1a1200" id="obj-hp-shrine_a" data-maxw="20"/>
+          </g>
+
+          <!-- ── Shrine B — Dragon (red jungle, bottom-right area) ──────────── -->
+          <g id="obj-shrine_b">
+            <circle cx="212" cy="192" r="11" fill="#1a1400" stroke="#c89b3c" stroke-width="2"/>
+            <polygon points="212,184 219,197 205,197" fill="none" stroke="#c89b3c" stroke-width="1.2" opacity="0.8"/>
+            <text x="212" y="212" text-anchor="middle" font-size="5" fill="#c89b3c">SHRINE</text>
+            <rect x="202" y="205" width="20" height="3" rx="1" fill="#1a1200" id="obj-hp-shrine_b" data-maxw="20"/>
+          </g>
+
+          <!-- ── Warden B (map center, slightly blue side) ──────────────────── -->
+          <g id="obj-warden_b">
+            <circle cx="138" cy="148" r="10" fill="#120a1a" stroke="#9b59b6" stroke-width="2"/>
+            <text x="138" y="152" text-anchor="middle" font-size="6" fill="#9b59b6" font-weight="bold">W</text>
+            <text x="138" y="165" text-anchor="middle" font-size="4.5" fill="#9b59b6">WARDEN</text>
+            <rect x="128" y="159" width="20" height="3" rx="1" fill="#0a0a12" id="obj-hp-warden_b" data-maxw="20"/>
+          </g>
+
+          <!-- ── Warden R (map center, slightly red side) ───────────────────── -->
+          <g id="obj-warden_r">
+            <circle cx="162" cy="152" r="10" fill="#120a1a" stroke="#9b59b6" stroke-width="2"/>
+            <text x="162" y="156" text-anchor="middle" font-size="6" fill="#9b59b6" font-weight="bold">W</text>
+            <text x="162" y="169" text-anchor="middle" font-size="4.5" fill="#9b59b6">WARDEN</text>
+            <rect x="152" y="163" width="20" height="3" rx="1" fill="#0a0a12" id="obj-hp-warden_r" data-maxw="20"/>
+          </g>
+
+          <!-- ── Event ring ─────────────────────────────────────────────────── -->
           <circle id="map-event-ring" cx="150" cy="150" r="0" fill="none" stroke="#fff" stroke-width="2.5" opacity="0"/>
-          <!-- Blue champion dots -->
-          <circle id="map-b-vanguard"  class="map-dot map-dot-blue" cx="50"  cy="180" r="7"/>
-          <circle id="map-b-ranger"    class="map-dot map-dot-blue" cx="75"  cy="210" r="7"/>
-          <circle id="map-b-arcanist"  class="map-dot map-dot-blue" cx="110" cy="190" r="7"/>
-          <circle id="map-b-hunter"    class="map-dot map-dot-blue" cx="120" cy="250" r="7"/>
-          <circle id="map-b-warden"    class="map-dot map-dot-blue" cx="105" cy="255" r="7"/>
-          <text id="map-b-vanguard-lbl"  class="map-dot-lbl" x="50"  y="184">V</text>
-          <text id="map-b-ranger-lbl"    class="map-dot-lbl" x="75"  y="214">R</text>
-          <text id="map-b-arcanist-lbl"  class="map-dot-lbl" x="110" y="194">A</text>
-          <text id="map-b-hunter-lbl"    class="map-dot-lbl" x="120" y="254">H</text>
-          <text id="map-b-warden-lbl"    class="map-dot-lbl" x="105" y="259">W</text>
-          <!-- Red champion dots -->
-          <circle id="map-r-vanguard"  class="map-dot map-dot-red" cx="250" cy="120" r="7"/>
-          <circle id="map-r-ranger"    class="map-dot map-dot-red" cx="225" cy="90"  r="7"/>
-          <circle id="map-r-arcanist"  class="map-dot map-dot-red" cx="190" cy="110" r="7"/>
-          <circle id="map-r-hunter"    class="map-dot map-dot-red" cx="180" cy="50"  r="7"/>
-          <circle id="map-r-warden"    class="map-dot map-dot-red" cx="195" cy="45"  r="7"/>
-          <text id="map-r-vanguard-lbl"  class="map-dot-lbl" x="250" y="124">V</text>
-          <text id="map-r-ranger-lbl"    class="map-dot-lbl" x="225" y="94">R</text>
-          <text id="map-r-arcanist-lbl"  class="map-dot-lbl" x="190" y="114">A</text>
-          <text id="map-r-hunter-lbl"    class="map-dot-lbl" x="180" y="54">H</text>
-          <text id="map-r-warden-lbl"    class="map-dot-lbl" x="195" y="49">W</text>
+
+          <!-- ── Blue champion groups (transform set by JS) ─────────────────── -->
+          <!-- Each group: HP ring (r=9, circumference≈56.5) + dot + role label + name label -->
+          <g id="map-g-b-vanguard" class="map-agent-group" transform="translate(22,278)">
+            <circle class="map-hp-ring" r="9" stroke="#4caf50" stroke-width="2" fill="none" stroke-dasharray="56.5 56.5" stroke-linecap="round" id="map-hp-b-vanguard" transform="rotate(-90)"/>
+            <circle class="map-dot map-dot-blue" r="6" cx="0" cy="0"/>
+            <text class="map-dot-lbl" x="0" y="3" text-anchor="middle">V</text>
+            <text class="map-agent-name" x="0" y="-13" text-anchor="middle" id="map-name-b-vanguard"></text>
+          </g>
+          <g id="map-g-b-ranger" class="map-agent-group" transform="translate(27,273)">
+            <circle class="map-hp-ring" r="9" stroke="#4caf50" stroke-width="2" fill="none" stroke-dasharray="56.5 56.5" stroke-linecap="round" id="map-hp-b-ranger" transform="rotate(-90)"/>
+            <circle class="map-dot map-dot-blue" r="6" cx="0" cy="0"/>
+            <text class="map-dot-lbl" x="0" y="3" text-anchor="middle">R</text>
+            <text class="map-agent-name" x="0" y="-13" text-anchor="middle" id="map-name-b-ranger"></text>
+          </g>
+          <g id="map-g-b-arcanist" class="map-agent-group" transform="translate(24,276)">
+            <circle class="map-hp-ring" r="9" stroke="#4caf50" stroke-width="2" fill="none" stroke-dasharray="56.5 56.5" stroke-linecap="round" id="map-hp-b-arcanist" transform="rotate(-90)"/>
+            <circle class="map-dot map-dot-blue" r="6" cx="0" cy="0"/>
+            <text class="map-dot-lbl" x="0" y="3" text-anchor="middle">A</text>
+            <text class="map-agent-name" x="0" y="-13" text-anchor="middle" id="map-name-b-arcanist"></text>
+          </g>
+          <g id="map-g-b-hunter" class="map-agent-group" transform="translate(19,274)">
+            <circle class="map-hp-ring" r="9" stroke="#4caf50" stroke-width="2" fill="none" stroke-dasharray="56.5 56.5" stroke-linecap="round" id="map-hp-b-hunter" transform="rotate(-90)"/>
+            <circle class="map-dot map-dot-blue" r="6" cx="0" cy="0"/>
+            <text class="map-dot-lbl" x="0" y="3" text-anchor="middle">H</text>
+            <text class="map-agent-name" x="0" y="-13" text-anchor="middle" id="map-name-b-hunter"></text>
+          </g>
+          <g id="map-g-b-warden" class="map-agent-group" transform="translate(16,270)">
+            <circle class="map-hp-ring" r="9" stroke="#4caf50" stroke-width="2" fill="none" stroke-dasharray="56.5 56.5" stroke-linecap="round" id="map-hp-b-warden" transform="rotate(-90)"/>
+            <circle class="map-dot map-dot-blue" r="6" cx="0" cy="0"/>
+            <text class="map-dot-lbl" x="0" y="3" text-anchor="middle">W</text>
+            <text class="map-agent-name" x="0" y="-13" text-anchor="middle" id="map-name-b-warden"></text>
+          </g>
+
+          <!-- ── Red champion groups ────────────────────────────────────────── -->
+          <g id="map-g-r-vanguard" class="map-agent-group" transform="translate(278,22)">
+            <circle class="map-hp-ring" r="9" stroke="#4caf50" stroke-width="2" fill="none" stroke-dasharray="56.5 56.5" stroke-linecap="round" id="map-hp-r-vanguard" transform="rotate(-90)"/>
+            <circle class="map-dot map-dot-red" r="6" cx="0" cy="0"/>
+            <text class="map-dot-lbl" x="0" y="3" text-anchor="middle">V</text>
+            <text class="map-agent-name" x="0" y="-13" text-anchor="middle" id="map-name-r-vanguard"></text>
+          </g>
+          <g id="map-g-r-ranger" class="map-agent-group" transform="translate(273,27)">
+            <circle class="map-hp-ring" r="9" stroke="#4caf50" stroke-width="2" fill="none" stroke-dasharray="56.5 56.5" stroke-linecap="round" id="map-hp-r-ranger" transform="rotate(-90)"/>
+            <circle class="map-dot map-dot-red" r="6" cx="0" cy="0"/>
+            <text class="map-dot-lbl" x="0" y="3" text-anchor="middle">R</text>
+            <text class="map-agent-name" x="0" y="-13" text-anchor="middle" id="map-name-r-ranger"></text>
+          </g>
+          <g id="map-g-r-arcanist" class="map-agent-group" transform="translate(276,24)">
+            <circle class="map-hp-ring" r="9" stroke="#4caf50" stroke-width="2" fill="none" stroke-dasharray="56.5 56.5" stroke-linecap="round" id="map-hp-r-arcanist" transform="rotate(-90)"/>
+            <circle class="map-dot map-dot-red" r="6" cx="0" cy="0"/>
+            <text class="map-dot-lbl" x="0" y="3" text-anchor="middle">A</text>
+            <text class="map-agent-name" x="0" y="-13" text-anchor="middle" id="map-name-r-arcanist"></text>
+          </g>
+          <g id="map-g-r-hunter" class="map-agent-group" transform="translate(281,26)">
+            <circle class="map-hp-ring" r="9" stroke="#4caf50" stroke-width="2" fill="none" stroke-dasharray="56.5 56.5" stroke-linecap="round" id="map-hp-r-hunter" transform="rotate(-90)"/>
+            <circle class="map-dot map-dot-red" r="6" cx="0" cy="0"/>
+            <text class="map-dot-lbl" x="0" y="3" text-anchor="middle">H</text>
+            <text class="map-agent-name" x="0" y="-13" text-anchor="middle" id="map-name-r-hunter"></text>
+          </g>
+          <g id="map-g-r-warden" class="map-agent-group" transform="translate(284,30)">
+            <circle class="map-hp-ring" r="9" stroke="#4caf50" stroke-width="2" fill="none" stroke-dasharray="56.5 56.5" stroke-linecap="round" id="map-hp-r-warden" transform="rotate(-90)"/>
+            <circle class="map-dot map-dot-red" r="6" cx="0" cy="0"/>
+            <text class="map-dot-lbl" x="0" y="3" text-anchor="middle">W</text>
+            <text class="map-agent-name" x="0" y="-13" text-anchor="middle" id="map-name-r-warden"></text>
+          </g>
         </svg>
         <div class="pbp-map-legend">
           <span class="map-leg-blue">● Blue</span>
           <span class="map-leg-red">● Red</span>
-          <span class="map-leg-dim">V=Vanguard R=Ranger A=Arcanist H=Hunter W=Warden</span>
+          <span class="map-leg-dim">V=Top R=Jungle A=Mid H=Bot W=Support</span>
         </div>
         <div class="gold-chart-wrap">
           <div class="gold-chart-label">Gold Lead</div>
