@@ -318,15 +318,32 @@ function decideAction(agent, allies, enemies, objs, jungles, tick, phase) {
 
   // 5. Jungle: jungle or gank (modified by tactic flags)
   if (agent.pos === 'jungle') {
-    const gankHP  = agent._tacticObjWeight ? 0.70 : 0.55; // shrine ganking: attack healthier enemies
-    const gankGS  = agent._tacticObjWeight ? 9 : 12;      // lower gameSense threshold for shrine style
-    const gankDst = agent._tacticEnemyJgWeight ? 130 : 100; // counter-jungling extends reach
+    const gankHP  = agent._tacticObjWeight ? 0.70 : 0.55;
+    const gankGS  = agent._tacticObjWeight ? 9 : 12;
+    const gankDst = agent._tacticEnemyJgWeight ? 130 : 100;
     if (gameSense > gankGS) {
       const gankTarget = enemies.find(e => !e.isDead && e.hp/e.maxHp < gankHP && dist(agent,e) < gankDst);
       if (gankTarget) {
         agent.state  = 'fighting';
         agent.target = { type:'champion', ref: gankTarget };
         return;
+      }
+    }
+    // Phase 1+: prioritize neutral objectives over camp farming
+    if (phase >= 1 && gameSense > 5) {
+      const shrine = objs.find(o => o.type === 'shrine' && !o.tempDown);
+      if (shrine) {
+        agent.state  = 'contesting';
+        agent.target = { type:'objective', ref: shrine };
+        return;
+      }
+      if (agent.hp / agent.maxHp > 0.35) {
+        const warden = objs.find(o => o.type === 'warden' && !o.tempDown);
+        if (warden) {
+          agent.state  = 'contesting';
+          agent.target = { type:'warden', ref: warden };
+          return;
+        }
       }
     }
     // Counter-jungling: also target enemy camps
@@ -340,35 +357,43 @@ function decideAction(agent, allies, enemies, objs, jungles, tick, phase) {
     }
   }
 
-  // 6. Late-game push toward enemy objectives
-  if (phase >= 2 && gameSense > 7) {
+  // 6. Support: also prioritize neutral objectives
+  if (phase >= 1 && agent.pos === 'support' && gameSense > 5) {
+    const shrine = objs.find(o => o.type === 'shrine' && !o.tempDown);
+    if (shrine) {
+      agent.state  = 'contesting';
+      agent.target = { type:'objective', ref: shrine };
+      return;
+    }
+    if (agent.hp / agent.maxHp > 0.35) {
+      const warden = objs.find(o => o.type === 'warden' && !o.tempDown);
+      if (warden) {
+        agent.state  = 'contesting';
+        agent.target = { type:'warden', ref: warden };
+        return;
+      }
+    }
+  }
+
+  // 7. Push toward enemy objectives (phase 1+ = tick 50+)
+  if (phase >= 1 && gameSense > 5) {
     const seq = enemySide === 'red'
       ? ['r_top1','r_top2','r_mid1','r_mid2','r_bot1','r_bot2','r_heart','r_ancient']
       : ['b_bot1','b_bot2','b_mid1','b_mid2','b_top1','b_top2','b_heart','b_ancient'];
     const nextObj = objs.find(o => seq.includes(o.id) && !o.destroyed);
-    if (nextObj && dist(agent, nextObj) < 180) {
+    if (nextObj) {
       agent.state  = 'contesting';
       agent.target = { type:'objective', ref: nextObj };
       return;
     }
   }
 
-  // 7. Shrine contestation (mid-game)
-  if (phase >= 1 && gameSense > 9) {
-    const shrine = objs.find(o => o.type === 'shrine' && !o.tempDown && dist(agent, o) < 65);
+  // 8. Shrine contestation for other roles (mid-game, nearby only)
+  if (phase >= 1 && gameSense > 5) {
+    const shrine = objs.find(o => o.type === 'shrine' && !o.tempDown && dist(agent, o) < 120);
     if (shrine) {
       agent.state  = 'contesting';
       agent.target = { type:'objective', ref: shrine };
-      return;
-    }
-  }
-
-  // 8. Warden opportunity
-  if (agent.hp / agent.maxHp > 0.35) {
-    const myWarden = objs.find(o => o.type === 'warden' && !o.tempDown && dist(agent, o) < 55);
-    if (myWarden) {
-      agent.state  = 'contesting';
-      agent.target = { type:'warden', ref: myWarden };
       return;
     }
   }
@@ -380,7 +405,7 @@ function decideAction(agent, allies, enemies, objs, jungles, tick, phase) {
 }
 
 function laneTarget(side, pos, phase, enemySide, objs) {
-  if (phase >= 2) {
+  if (phase >= 1) {
     const seq = enemySide === 'red'
       ? ['r_top1','r_top2','r_mid1','r_mid2','r_bot1','r_bot2','r_heart','r_ancient']
       : ['b_bot1','b_bot2','b_mid1','b_mid2','b_top1','b_top2','b_heart','b_ancient'];
@@ -967,12 +992,16 @@ function simulateMatch(blueTeamArr, redTeamArr, blueName, redName, preDraft) {
       pos:     ag.pos,
       champion:ag.champName,
       kills:   ag.kills, deaths: ag.deaths, assists: ag.assists, cs: ag.cs,
+      gold:    Math.round(ag.gold || 0),
+      items:   (ag.items || []).map(id => ITEM_MAP[id]?.name || id),
     })),
     red: redAgents.map((ag, i) => ({
       name:    redTeamArr[i]?.name || ag.champName,
       pos:     ag.pos,
       champion:ag.champName,
       kills:   ag.kills, deaths: ag.deaths, assists: ag.assists, cs: ag.cs,
+      gold:    Math.round(ag.gold || 0),
+      items:   (ag.items || []).map(id => ITEM_MAP[id]?.name || id),
     })),
   };
 
@@ -1037,6 +1066,7 @@ function agentStatsMap(agents) {
       kills:   ag.kills   || 0,
       deaths:  ag.deaths  || 0,
       assists: ag.assists || 0,
+      cs:      ag.cs      || 0,
       gold:    Math.round(ag.gold || 0),
       isDead:  !!ag.isDead,
       level:   ag.level   || 1,

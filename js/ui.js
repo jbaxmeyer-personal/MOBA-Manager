@@ -1351,7 +1351,6 @@ function initLiveStats(draft, blueName, redName) {
             <div class="lsp-name">${_escHtml(playerName || champName)}</div>
             <div class="lsp-champ">${_escHtml(champName)}</div>
           </div>
-          <div class="lsp-gold" id="lsp-gold-${pfx}-${pos}">0g</div>
         </div>
         <div class="lsp-hp-bar-wrap">
           <div class="lsp-hp-bar" id="lsp-hp-${pfx}-${pos}"></div>
@@ -1378,12 +1377,10 @@ function updateLiveStats(agentStats) {
       if (!s) return;
       const pfx = side[0];
       const kdaEl   = document.getElementById(`lsp-kda-${pfx}-${pos}`);
-      const goldEl  = document.getElementById(`lsp-gold-${pfx}-${pos}`);
       const rowEl   = document.getElementById(`lsp-${pfx}-${pos}`);
       const lvEl    = document.getElementById(`lsp-lv-${pfx}-${pos}`);
       const itemsEl = document.getElementById(`lsp-items-${pfx}-${pos}`);
       if (kdaEl)  kdaEl.innerHTML = `<span style="color:#e8e8e8">${s.kills}</span>/<span style="color:#ff7b7b">${s.deaths}</span>/<span style="color:#4fc3f7">${s.assists}</span>`;
-      if (goldEl) goldEl.textContent = s.gold >= 1000 ? (s.gold/1000).toFixed(1)+'k' : s.gold+'g';
       if (rowEl)  rowEl.classList.toggle('lsp-dead', !!s.isDead);
       if (lvEl)   lvEl.textContent = `Lv.${s.level || 1}`;
       if (itemsEl && s.items) {

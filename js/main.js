@@ -578,28 +578,51 @@ function _updateMatchScore(bK, rK, bShr, rShr, bRt, rRt, adv) {
 
 // ─── Champion Matchup Section ─────────────────────────────────────────────────
 
+function _muItems(itemIds) {
+  if (!itemIds || !itemIds.length) return '<span class="pbp-mu-no-items">—</span>';
+  return itemIds.slice(0, 3).map(id => {
+    const name = (typeof ITEM_MAP !== 'undefined' && ITEM_MAP[id]?.name) || id;
+    const abbr = name.split(' ').map(w => w[0]).join('').slice(0, 3).toUpperCase();
+    return `<span class="pbp-mu-item" title="${_escHtml(name)}">${abbr}</span>`;
+  }).join('');
+}
+
 function _updateMatchup(agentStats) {
   const el = document.getElementById('pbp-matchup-rows');
   if (!el || !_matchContext) return;
-  const { blueRoster, redRoster } = _matchContext;
   const roles = ['top','jungle','mid','adc','support'];
-  const rlbl = { top:'TOP', jungle:'JGL', mid:'MID', adc:'ADC', support:'SUP' };
+  const rlbl  = { top:'TOP', jungle:'JGL', mid:'MID', adc:'ADC', support:'SUP' };
   let html = '';
   for (const role of roles) {
     const bs = agentStats?.blue?.[role] || {};
     const rs = agentStats?.red?.[role]  || {};
-    const bp = blueRoster?.find(p => p.role === role);
-    const rp = redRoster?.find(p => p.role === role);
-    const bKda  = `${bs.kills||0}/${bs.deaths||0}/${bs.assists||0}`;
-    const rKda  = `${rs.kills||0}/${rs.deaths||0}/${rs.assists||0}`;
-    const bGold = ((bs.gold||0)/1000).toFixed(1)+'K';
-    const rGold = ((rs.gold||0)/1000).toFixed(1)+'K';
-    const bCls  = bs.isDead ? ' pbp-mu-dead' : '';
-    const rCls  = rs.isDead ? ' pbp-mu-dead' : '';
+    const bKda  = `<span style="color:#e8e8e8">${bs.kills||0}</span>/<span style="color:#e74c3c">${bs.deaths||0}</span>/<span style="color:#4fc3f7">${bs.assists||0}</span>`;
+    const rKda  = `<span style="color:#e8e8e8">${rs.kills||0}</span>/<span style="color:#e74c3c">${rs.deaths||0}</span>/<span style="color:#ff7b7b">${rs.assists||0}</span>`;
+    const bGs   = bs.gold || 0;
+    const rGs   = rs.gold || 0;
+    const diff  = Math.abs(bGs - rGs);
+    const diffK = diff >= 1000 ? (diff/1000).toFixed(1)+'K' : diff+'';
+    const bAhead = bGs >= rGs;
+    const arrow  = bAhead
+      ? `<span class="pbp-mu-diff pbp-mu-diff-blue">◄ ${diffK}</span>`
+      : `<span class="pbp-mu-diff pbp-mu-diff-red">${diffK} ►</span>`;
+    const bDead = bs.isDead ? ' pbp-mu-dead' : '';
+    const rDead = rs.isDead ? ' pbp-mu-dead' : '';
     html += `<div class="pbp-mu-row">
-      <span class="pbp-mu-blue${bCls}">${bp?.name||'?'}&nbsp;<span class="pbp-mu-kda">${bKda}</span>&nbsp;<span class="pbp-mu-gold">${bGold}</span></span>
-      <span class="pbp-mu-role">${rlbl[role]}</span>
-      <span class="pbp-mu-red${rCls}"><span class="pbp-mu-gold">${rGold}</span>&nbsp;<span class="pbp-mu-kda">${rKda}</span>&nbsp;${rp?.name||'?'}</span>
+      <div class="pbp-mu-blue${bDead}">
+        <span class="pbp-mu-items">${_muItems(bs.items)}</span>
+        <span class="pbp-mu-kda">${bKda}</span>
+        <span class="pbp-mu-cs">${bs.cs||0}</span>
+      </div>
+      <div class="pbp-mu-center">
+        ${arrow}
+        <span class="pbp-mu-role">${rlbl[role]}</span>
+      </div>
+      <div class="pbp-mu-red${rDead}">
+        <span class="pbp-mu-cs">${rs.cs||0}</span>
+        <span class="pbp-mu-kda">${rKda}</span>
+        <span class="pbp-mu-items">${_muItems(rs.items)}</span>
+      </div>
     </div>`;
   }
   el.innerHTML = html;
@@ -698,14 +721,17 @@ function _buildResultsKDARows(players, color) {
   const POS_ICON = { top:'⚔️', jungle:'🌿', mid:'✦', adc:'🏹', support:'🛡️' };
   return players.map(p => {
     const gold = p.gold >= 1000 ? (p.gold/1000).toFixed(1)+'K' : (p.gold||0)+'';
+    const itemsHtml = (p.items && p.items.length)
+      ? `<div class="res-items">${p.items.map(it => `<span class="res-item-tag">${_escHtml(it)}</span>`).join('')}</div>`
+      : '';
     return `<tr class="res-kda-row">
       <td class="res-kda-pos">${POS_ICON[p.pos]||''}</td>
       <td class="res-kda-name" style="color:${color}">${_escHtml(p.name)}</td>
-      <td class="res-kda-champ">${_escHtml(p.champion)}</td>
+      <td class="res-kda-champ">${_escHtml(p.champion)}<br>${itemsHtml}</td>
       <td class="res-kda-kda">
         <span style="color:#e8e8e8;font-weight:700">${p.kills}</span>/<span style="color:#e74c3c">${p.deaths}</span>/<span style="color:#4fc3f7">${p.assists}</span>
       </td>
-      <td class="res-kda-gold">${gold}</td>
+      <td class="res-kda-gold" style="color:#c89b3c">${gold}g</td>
     </tr>`;
   }).join('');
 }
