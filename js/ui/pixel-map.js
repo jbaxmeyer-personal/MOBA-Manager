@@ -4,7 +4,6 @@
   var MM_W = 200, MM_H = 200;
   var MAP_SIZE = 300;
   var SPRITE_S = 2;
-  var TILE_UNITS = 15;
   var TICK_MS_BASE = 2000;
 
   var _canvas = null, _ctx = null;
@@ -74,11 +73,37 @@
     _rings.push({ mx: mx, my: my, r: 0, maxR: 24, alpha: 1.0, color: color || '#ffffff', born: performance.now() });
   }
 
-  // Terrain tile cache
-  var _tileCache = {};
+  // Terrain texture (offscreen canvas, built once)
+  var _terrainTex = null;
+  // Forest trees (scattered depth sprites)
+  var _forestTrees = [];
 
-  function getTileSeed(tx, ty) {
-    return (tx * 1619 + ty * 31337) & 0xFFFF;
+  function _buildForestTrees() {
+    _forestTrees = [];
+    var spacing = 11;
+    for (var my = 20; my < 280; my += spacing) {
+      for (var mx = 20; mx < 280; mx += spacing) {
+        var ttype = (typeof getTileType === 'function') ? getTileType(mx, my) : 4;
+        if (ttype !== 4 && ttype !== 5) continue; // only JUNGLE or DEEP_FOREST
+        // Seeded jitter
+        var jx = (_terrainHash(mx, my) / 255.0 - 0.5) * spacing * 0.8;
+        var jy = (_terrainHash(mx + 200, my + 200) / 255.0 - 0.5) * spacing * 0.8;
+        var tx = mx + jx, ty = my + jy;
+        var tt2 = (typeof getTileType === 'function') ? getTileType(Math.round(tx), Math.round(ty)) : 4;
+        if (tt2 === 0 || tt2 === 1 || tt2 === 2 || tt2 === 3) continue;
+        var variant = _terrainHash(mx * 3, my * 7) % 3;
+        var sz = 0.85 + (_terrainHash(mx + 50, my + 50) / 255.0) * 0.45;
+        _forestTrees.push({ mx: tx, my: ty, variant: variant, sz: sz });
+      }
+    }
+    _forestTrees.sort(function(a, b) { return a.my - b.my; });
+  }
+
+  function _terrainHash(x, y) {
+    var n = ((x * 1619) + (y * 31337)) | 0;
+    n = (n ^ (n >>> 13)) | 0;
+    n = (n * 1274126177) | 0;
+    return ((n ^ (n >>> 11)) & 0xFF);
   }
 
   // Spawn positions
@@ -201,6 +226,7 @@
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
     renderTerrain(ctx);
+    renderForestTrees(ctx);
     renderStructures(ctx);
     renderAgents(ctx, now);
     renderRings(ctx);
@@ -208,29 +234,26 @@
   }
 
   function renderTerrain(ctx) {
-    // How many canvas pixels per map unit
-    var scaleX = CANVAS_W / cam.w;
-    var scaleY = CANVAS_H / cam.h;
-    // Tile size in canvas pixels
-    var tileSizeX = TILE_UNITS * scaleX;
-    var tileSizeY = TILE_UNITS * scaleY;
-    var tileSize = Math.ceil(Math.max(tileSizeX, tileSizeY));
+    if (_terrainTex) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(_terrainTex,
+        cam.x, cam.y, cam.w, cam.h,
+        0, 0, CANVAS_W, CANVAS_H);
+    } else {
+      ctx.fillStyle = '#0a150a';
+      ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    }
+  }
 
-    // First tile index visible
-    var startTX = Math.floor(cam.x / TILE_UNITS);
-    var startTY = Math.floor(cam.y / TILE_UNITS);
-    var endTX = Math.ceil((cam.x + cam.w) / TILE_UNITS);
-    var endTY = Math.ceil((cam.y + cam.h) / TILE_UNITS);
-
-    for (var ty = startTY; ty <= endTY; ty++) {
-      for (var tx = startTX; tx <= endTX; tx++) {
-        var mx = tx * TILE_UNITS + TILE_UNITS * 0.5;
-        var my = ty * TILE_UNITS + TILE_UNITS * 0.5;
-        var ttype = getTileType(mx, my);
-        var cPos = m2c(tx * TILE_UNITS, ty * TILE_UNITS);
-        var seed = getTileSeed(tx, ty);
-        drawTile(ctx, ttype, Math.round(cPos.x), Math.round(cPos.y), Math.ceil(tileSizeX) + 1, seed);
-      }
+  function renderForestTrees(ctx) {
+    if (typeof drawForestTree !== 'function') return;
+    for (var i = 0; i < _forestTrees.length; i++) {
+      var t = _forestTrees[i];
+      var cp = m2c(t.mx, t.my);
+      var cx = Math.round(cp.x);
+      var cy = Math.round(cp.y);
+      if (cx < -30 || cx > CANVAS_W + 30 || cy < -30 || cy > CANVAS_H + 30) continue;
+      drawForestTree(ctx, cx, cy, Math.max(1, Math.round(SPRITE_S * t.sz)), t.variant);
     }
   }
 
@@ -262,11 +285,6 @@
         drawWarden(ctx, cx, cy, SPRITE_S, st.hp, st.tempDown);
       }
 
-      // Structure label
-      ctx.font = '8px monospace';
-      ctx.fillStyle = st.side === 'blue' ? '#4fc3f7' : st.side === 'red' ? '#ff7b7b' : '#c89b3c';
-      ctx.textAlign = 'center';
-      ctx.fillText(st.id.replace('b_','B-').replace('r_','R-'), cx, cy + 22);
     }
     ctx.textAlign = 'left';
   }
@@ -360,20 +378,12 @@
     var ctx = _mmCtx;
     var scale = MM_W / MAP_SIZE;
 
-    ctx.fillStyle = '#060e06';
-    ctx.fillRect(0, 0, MM_W, MM_H);
-
-    // Terrain blocks (10x10 map unit blocks)
-    var blockUnits = 10;
-    for (var by = 0; by < MAP_SIZE; by += blockUnits) {
-      for (var bx = 0; bx < MAP_SIZE; bx += blockUnits) {
-        var ttype = getTileType(bx + blockUnits * 0.5, by + blockUnits * 0.5);
-        var px = Math.round(bx * scale);
-        var py = Math.round(by * scale);
-        var pw = Math.ceil(blockUnits * scale) + 1;
-        ctx.fillStyle = mmTileColor(ttype);
-        ctx.fillRect(px, py, pw, pw);
-      }
+    if (_terrainTex) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(_terrainTex, 0, 0, MAP_SIZE, MAP_SIZE, 0, 0, MM_W, MM_H);
+    } else {
+      ctx.fillStyle = '#0a150a';
+      ctx.fillRect(0, 0, MM_W, MM_H);
     }
 
     // Structures
@@ -412,18 +422,6 @@
     ctx.restore();
   }
 
-  function mmTileColor(ttype) {
-    switch (ttype) {
-      case 0: return '#2a2a2a'; // WALL
-      case 1: return '#2a3a5a'; // BASE_BLUE
-      case 2: return '#5a2a2a'; // BASE_RED
-      case 3: return '#7a6040'; // LANE
-      case 4: return '#1a3010'; // JUNGLE
-      case 5: return '#0d1a08'; // DEEP_FOREST
-      case 6: return '#2a4518'; // CLEARING
-      default: return '#1a3010';
-    }
-  }
 
   // Update camera target to centroid of alive agents
   function updateCameraTarget() {
@@ -460,6 +458,12 @@
     // Pixel-perfect rendering
     _ctx.imageSmoothingEnabled = false;
     if (_mmCtx) _mmCtx.imageSmoothingEnabled = false;
+
+    // Build terrain texture once
+    if (typeof buildTerrainTexture === 'function') {
+      _terrainTex = buildTerrainTexture();
+    }
+    _buildForestTrees();
 
     initAgents();
     initStructures();
@@ -536,8 +540,11 @@
           }
 
           // HP
-          if (typeof pos.hp === 'number') ag.hp = pos.hp;
+          if (typeof pos.hp === 'number') ag.hp = pos.hp / (pos.maxHp || 1);
           if (typeof pos.maxHp === 'number') ag.maxHp = pos.maxHp;
+
+          // Champion name
+          if (pos.champName) ag.champName = pos.champName;
 
           // Dead status
           if (pos.isDead === true) {
@@ -556,14 +563,14 @@
       updateCameraTarget();
     }
 
-    // Update objectives
-    if (ev.objectives) {
-      for (var id in ev.objectives) {
-        var st = _structures[id];
+    // Update objectives (ev.objectives is an array of {id,hp,maxHp,destroyed,tempDown})
+    if (ev.objectives && ev.objectives.length) {
+      for (var oi = 0; oi < ev.objectives.length; oi++) {
+        var obj = ev.objectives[oi];
+        var st = _structures[obj.id];
         if (!st) continue;
-        var obj = ev.objectives[id];
-        if (typeof obj.hp === 'number') st.hp = Math.max(0, obj.hp);
-        if (typeof obj.maxHp === 'number') st.maxHp = obj.maxHp;
+        if (typeof obj.maxHp === 'number' && obj.maxHp > 0) st.maxHp = obj.maxHp;
+        if (typeof obj.hp === 'number') st.hp = Math.max(0, obj.hp) / (st.maxHp || 1);
         if (typeof obj.destroyed === 'boolean') st.destroyed = obj.destroyed;
         if (typeof obj.tempDown === 'boolean') st.tempDown = obj.tempDown;
       }

@@ -740,7 +740,9 @@ function posMap(agents) {
     m[ag.side][ag.pos] = {
       x: Math.round(ag.x), y: Math.round(ag.y),
       alive: !ag.isDead,
+      isDead: !!ag.isDead,
       hp: Math.round(ag.hp), maxHp: ag.maxHp,
+      champName: ag.champName,
     };
   });
   return m;

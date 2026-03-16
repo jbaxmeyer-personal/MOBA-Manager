@@ -594,6 +594,7 @@ button{cursor:pointer;border:none;outline:none;font-family:inherit;}
   display: flex;
   flex-direction: column;
   flex: 1;
+  height: 0;
   min-height: 0;
   overflow: hidden;
   position: relative;

@@ -32,118 +32,119 @@ var TILE = { WALL:0, BASE_BLUE:1, BASE_RED:2, LANE:3, JUNGLE:4, DEEP_FOREST:5, C
 
 function getTileType(mx, my) {
   if (mx < 10 || mx > 290 || my < 10 || my > 290) return TILE.WALL;
-  if (mx < 68 && my > 232) return TILE.BASE_BLUE;
-  if (mx > 232 && my < 68) return TILE.BASE_RED;
-  // lane checks
-  if (my > 242 && mx > 28 && mx < 215) return TILE.LANE;
-  if (mx < 52 && my > 28 && my < 242) return TILE.LANE;
-  if (Math.abs(mx + my - 300) < 22 && mx > 10 && mx < 290) return TILE.LANE;
-  if (mx < 68 && my > 175) return TILE.LANE;
-  if (mx < 175 && my > 232) return TILE.LANE;
-  if (mx > 232 && my < 125) return TILE.LANE;
-  if (mx > 125 && my < 68) return TILE.LANE;
-  // clearings
+  // Base areas
+  if (mx < 65 && my > 235) return TILE.BASE_BLUE;
+  if (mx > 235 && my < 65) return TILE.BASE_RED;
+  var lw = 18; // lane half-width
+  // Square perimeter lanes
+  if (Math.abs(my - 265) < lw && mx > 25 && mx < 275) return TILE.LANE; // bottom
+  if (Math.abs(mx - 35)  < lw && my > 25 && my < 275) return TILE.LANE; // left
+  if (Math.abs(my - 35)  < lw && mx > 25 && mx < 275) return TILE.LANE; // top
+  if (Math.abs(mx - 265) < lw && my > 25 && my < 275) return TILE.LANE; // right
+  // Mid diagonal (bottom-left to top-right: mx+my=300)
+  if (Math.abs(mx + my - 300) < lw * 1.35 && mx > 10 && mx < 290) return TILE.LANE;
+  // Clearings at shrine / warden positions
   var dx65 = mx - 65, dy65 = my - 65;
-  if (dx65*dx65 + dy65*dy65 < 400) return TILE.CLEARING;
+  if (dx65*dx65 + dy65*dy65 < 600) return TILE.CLEARING;
   var dx235 = mx - 235, dy235 = my - 235;
-  if (dx235*dx235 + dy235*dy235 < 400) return TILE.CLEARING;
-  // deep forest: far from all lanes
+  if (dx235*dx235 + dy235*dy235 < 600) return TILE.CLEARING;
+  // Deep forest vs jungle
   var distToLane = Math.min(
-    Math.abs(my - 265),           // bot lane
-    Math.abs(mx - 35),            // top lane
-    Math.abs(mx + my - 300) / 1.414 // mid diagonal
+    Math.abs(my - 265), Math.abs(my - 35),
+    Math.abs(mx - 35),  Math.abs(mx - 265),
+    Math.abs(mx + my - 300) / 1.414
   );
-  if (distToLane > 55) return TILE.DEEP_FOREST;
+  if (distToLane > 60) return TILE.DEEP_FOREST;
   return TILE.JUNGLE;
 }
 
-function drawTile(ctx, tileType, cx, cy, tileSize, seed) {
-  var s1 = seed % 7;
-  var s2 = (seed * 3 + 13) % 11;
-  var s3 = (seed * 7 + 5) % 5;
+// ── Pixel-by-pixel terrain texture ────────────────────────────────────────────
 
-  switch (tileType) {
+function _terrainHash(x, y) {
+  var n = ((x * 1619) + (y * 31337)) | 0;
+  n = (n ^ (n >>> 13)) | 0;
+  n = (n * 1274126177) | 0;
+  return ((n ^ (n >>> 11)) & 0xFF);
+}
+
+function _terrainPixelRGB(ttype, fine, coarse) {
+  var mix = fine * 0.6 + coarse * 0.4;
+  var m = Math.floor(mix * 38);
+  switch (ttype) {
     case TILE.WALL:
-      ctx.fillStyle = '#2a2a2a';
-      ctx.fillRect(cx, cy, tileSize, tileSize);
-      ctx.fillStyle = '#3a3a3a';
-      // brick mortar lines
-      if ((Math.floor(cy / tileSize) % 2) === 0) {
-        ctx.fillRect(cx, cy + Math.floor(tileSize * 0.5), tileSize, 1);
-        ctx.fillRect(cx + Math.floor(tileSize * 0.5), cy, 1, Math.floor(tileSize * 0.5));
-      } else {
-        ctx.fillRect(cx, cy + Math.floor(tileSize * 0.5), tileSize, 1);
-        ctx.fillRect(cx + Math.floor(tileSize * 0.25), cy, 1, Math.floor(tileSize * 0.5));
-        ctx.fillRect(cx + Math.floor(tileSize * 0.75), cy, 1, Math.floor(tileSize * 0.5));
-      }
-      break;
-
+      var v = 24 + m; return [v, v, v];
     case TILE.BASE_BLUE:
-      ctx.fillStyle = '#585858';
-      ctx.fillRect(cx, cy, tileSize, tileSize);
-      // stone block lines
-      ctx.fillStyle = '#484848';
-      ctx.fillRect(cx, cy + Math.floor(tileSize * 0.5), tileSize, 1);
-      if (s1 > 3) ctx.fillRect(cx + Math.floor(tileSize * 0.5), cy, 1, Math.floor(tileSize * 0.5));
-      // blue splash
-      ctx.fillStyle = 'rgba(42,58,90,0.6)';
-      ctx.fillRect(cx + s1, cy + s2 % 3, tileSize - s1 - s3, tileSize - s2 % 4 - s3);
-      break;
-
+      var v = 50 + m; return [v - 15, v - 5, v + 28];
     case TILE.BASE_RED:
-      ctx.fillStyle = '#585858';
-      ctx.fillRect(cx, cy, tileSize, tileSize);
-      ctx.fillStyle = '#484848';
-      ctx.fillRect(cx, cy + Math.floor(tileSize * 0.5), tileSize, 1);
-      if (s1 > 3) ctx.fillRect(cx + Math.floor(tileSize * 0.5), cy, 1, Math.floor(tileSize * 0.5));
-      ctx.fillStyle = 'rgba(90,42,42,0.6)';
-      ctx.fillRect(cx + s1, cy + s2 % 3, tileSize - s1 - s3, tileSize - s2 % 4 - s3);
-      break;
-
+      var v = 50 + m; return [v + 28, v - 5, v - 15];
     case TILE.LANE:
-      ctx.fillStyle = '#7a6040';
-      ctx.fillRect(cx, cy, tileSize, tileSize);
-      ctx.fillStyle = '#9a8060';
-      if (s1 > 4) ctx.fillRect(cx + s2, cy + s3, Math.floor(tileSize * 0.4), Math.floor(tileSize * 0.3));
-      if (s2 > 6) ctx.fillRect(cx + s1 + 2, cy + s2 - 4, Math.floor(tileSize * 0.25), Math.floor(tileSize * 0.2));
-      ctx.fillStyle = '#6a5030';
-      if (s3 > 2) ctx.fillRect(cx + s3, cy + s1 + 1, Math.floor(tileSize * 0.2), Math.floor(tileSize * 0.15));
-      break;
-
+      var v = 88 + m; return [v, Math.floor(v * 0.83), Math.floor(v * 0.52)];
     case TILE.JUNGLE:
-      ctx.fillStyle = '#1a3010';
-      ctx.fillRect(cx, cy, tileSize, tileSize);
-      ctx.fillStyle = '#0d1f08';
-      if (s1 > 2) ctx.fillRect(cx + s2, cy + s3 + 1, Math.floor(tileSize * 0.45), Math.floor(tileSize * 0.4));
-      if (s2 > 5) ctx.fillRect(cx + s1 + 1, cy + s2 % 4, Math.floor(tileSize * 0.3), Math.floor(tileSize * 0.35));
-      ctx.fillStyle = '#253818';
-      if (s3 > 1) ctx.fillRect(cx + s3 + 2, cy + s3, Math.floor(tileSize * 0.2), Math.floor(tileSize * 0.2));
-      break;
-
+      var v = 14 + Math.floor(mix * 16); return [Math.floor(v * 0.5), v + 7, Math.floor(v * 0.28)];
     case TILE.DEEP_FOREST:
-      ctx.fillStyle = '#0d1a08';
-      ctx.fillRect(cx, cy, tileSize, tileSize);
-      ctx.fillStyle = '#060e04';
-      if (s1 > 1) ctx.fillRect(cx + s2 % 5, cy + s3, Math.floor(tileSize * 0.5), Math.floor(tileSize * 0.45));
-      if (s2 > 4) ctx.fillRect(cx + s1, cy + s2 % 5 + 1, Math.floor(tileSize * 0.35), Math.floor(tileSize * 0.3));
-      ctx.fillStyle = '#111f0a';
-      if (s3 > 2) ctx.fillRect(cx + s3 + 1, cy + s1 % 4, Math.floor(tileSize * 0.25), Math.floor(tileSize * 0.2));
-      break;
-
+      var v = 8 + Math.floor(mix * 10); return [Math.floor(v * 0.4), v + 3, Math.floor(v * 0.22)];
     case TILE.CLEARING:
-      ctx.fillStyle = '#2a4518';
-      ctx.fillRect(cx, cy, tileSize, tileSize);
-      ctx.fillStyle = '#355820';
-      if (s1 > 3) ctx.fillRect(cx + s2, cy + s3, Math.floor(tileSize * 0.4), Math.floor(tileSize * 0.35));
-      ctx.fillStyle = '#1e3210';
-      if (s2 > 5) ctx.fillRect(cx + s1, cy + s2 % 4 + 1, Math.floor(tileSize * 0.3), Math.floor(tileSize * 0.25));
-      break;
-
-    default:
-      ctx.fillStyle = '#1a3010';
-      ctx.fillRect(cx, cy, tileSize, tileSize);
+      var v = 26 + Math.floor(mix * 22); return [Math.floor(v * 0.58), v + 13, Math.floor(v * 0.36)];
+    default: return [10, 18, 7];
   }
 }
+
+function buildTerrainTexture() {
+  var size = 300;
+  var oc = document.createElement('canvas');
+  oc.width = size; oc.height = size;
+  var oc2 = oc.getContext('2d');
+  oc2.imageSmoothingEnabled = false;
+  var id = oc2.createImageData(size, size);
+  var d = id.data;
+  for (var py = 0; py < size; py++) {
+    for (var px = 0; px < size; px++) {
+      var ttype = getTileType(px, py);
+      var fine   = _terrainHash(px, py) / 255.0;
+      var coarse = _terrainHash((px >> 3) * 13 + 7, (py >> 3) * 17 + 5) / 255.0;
+      var rgb = _terrainPixelRGB(ttype, fine, coarse);
+      var i4 = (py * size + px) * 4;
+      d[i4]   = rgb[0];
+      d[i4+1] = rgb[1];
+      d[i4+2] = rgb[2];
+      d[i4+3] = 255;
+    }
+  }
+  oc2.putImageData(id, 0, 0);
+  return oc;
+}
+
+// ── Forest tree (scattered depth sprite) ──────────────────────────────────────
+
+function drawForestTree(ctx, cx, cy, s, variant) {
+  // variant 0=small, 1=mid, 2=large — drawn as depth sprite (see top + front face)
+  var p = makePen(ctx, cx - 6*s, cy - 14*s, s);
+  // roots / base
+  ctx.fillStyle = '#160e04';
+  p(4, 12, 1, 3); p(7, 12, 1, 3); p(3, 13, 1, 2); p(8, 13, 1, 2); p(5, 13, 2, 1);
+  // trunk front face (depth sprite shows front)
+  ctx.fillStyle = variant === 2 ? '#3a2810' : '#332410';
+  p(4, 7, 4, 7);
+  ctx.fillStyle = '#4a3418';
+  p(5, 8, 1, 5); p(6, 7, 1, 6);
+  ctx.fillStyle = '#28180a';
+  p(4, 10, 1, 2); p(7, 9, 1, 3);
+  // canopy – three layers (viewed slightly from above, giving depth)
+  var g0 = variant === 0 ? '#1a3a0a' : variant === 1 ? '#153208' : '#102808';
+  var g1 = variant === 0 ? '#2a5012' : variant === 1 ? '#1e4808' : '#183806';
+  var g2 = variant === 0 ? '#3a6820' : variant === 1 ? '#2a5a10' : '#224814';
+  var g3 = '#4a7a22'; // bright tips
+  ctx.fillStyle = g0; p(1, 3, 10, 6);
+  ctx.fillStyle = g1; p(2, 2, 8, 5); p(3, 1, 6, 3);
+  ctx.fillStyle = g2; p(3, 2, 6, 4); p(4, 1, 4, 3); p(5, 0, 2, 2);
+  // highlight tips
+  ctx.fillStyle = g3;
+  p(4, 0, 1, 1); p(6, 0, 1, 1); p(3, 1, 1, 1); p(8, 1, 1, 1);
+  // underside shadow on canopy
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  p(2, 7, 8, 1);
+}
+
 
 // ── Structures ────────────────────────────────────────────────────────────────
 
