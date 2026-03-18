@@ -73,6 +73,8 @@ var camera_target : Vector2 = Vector2(150, 150) * MAP_SCALE
 
 # ─── Initialisation ───────────────────────────────────────────────────────────
 
+var _screenshot_frames : int = -1
+
 func _ready() -> void:
 	_load_match_data()
 	_build_terrain()
@@ -82,6 +84,9 @@ func _ready() -> void:
 	_build_champions()
 	_build_minimap_control()
 	_apply_tick(0)
+	var all_args := OS.get_cmdline_args() + OS.get_cmdline_user_args()
+	if "--screenshot" in all_args:
+		_screenshot_frames = 6  # wait 6 frames so scene is fully rendered
 
 func _get_asset_base() -> String:
 	return ProjectSettings.globalize_path("res://") + "../assets"
@@ -276,69 +281,45 @@ func _hash_tile(x: int, y: int) -> int:
 	return (x * 1234567 + y * 7654321) & 0x7FFFFFFF
 
 func _build_terrain() -> void:
-	var asset_base := _get_asset_base()
-	var ts_path := asset_base + "/terrain/tileset.png"
+	# Pure procedural terrain: 300x300 pixels (1px per map unit), scaled 12x.
+	# No tileset tiles — tileset art is too detailed and creates visual noise at scale.
+	# Multi-octave noise gives smooth organic variation without tile grid artifacts.
+	var terrain_img := Image.create(MAP_SIZE, MAP_SIZE, false, Image.FORMAT_RGBA8)
 
-	tileset_image = Image.new()
-	var err := tileset_image.load(ts_path)
-	if err != OK:
-		push_error("Failed to load tileset: " + ts_path)
-		tileset_image = Image.create(128, 240, false, Image.FORMAT_RGBA8)
-		tileset_image.fill(Color(0.639, 0.702, 0.082))
+	for py in range(MAP_SIZE):
+		for px in range(MAP_SIZE):
+			var ttype := _get_tile_type(float(px), float(py))
+			# Three octaves of noise for smooth, natural variation
+			var hf  := float(_hash_tile(px, py)) / 255.0
+			var hm  := float(_hash_tile((px >> 3) * 17 + 3, (py >> 3) * 13 + 7)) / 255.0
+			var hx  := float(_hash_tile((px >> 5) * 11 + 5, (py >> 5) * 19 + 2)) / 255.0
+			var n   := hf * 0.25 + hm * 0.45 + hx * 0.30  # 0.0 – 1.0
 
-	var terrain_img := Image.create(1200, 1200, false, Image.FORMAT_RGBA8)
-	terrain_img.fill(Color(0.639, 0.702, 0.082))
-
-	for ty in range(75):
-		for tx in range(75):
-			var mx : float = float(tx) * TILE_MAP_UNITS + TILE_MAP_UNITS * 0.5
-			var my : float = float(ty) * TILE_MAP_UNITS + TILE_MAP_UNITS * 0.5
-			var tile_type : int = _get_tile_type(mx, my)
-			var h : int = _hash_tile(tx, ty)
-			var src_x : int = 0
-			var src_y : int = 0
-
-			if tile_type == TILE_WALL:
-				if h % 2 == 0:
-					src_x = 0; src_y = 32
-				else:
-					src_x = 0; src_y = 16
-			elif tile_type == TILE_BASE_BLUE or tile_type == TILE_BASE_RED:
-				src_x = 16; src_y = 160
-			elif tile_type == TILE_LANE:
-				var vi : int = h % 4
-				if   vi == 0: src_x = 64;  src_y = 144
-				elif vi == 1: src_x = 80;  src_y = 144
-				elif vi == 2: src_x = 96;  src_y = 144
-				else:         src_x = 112; src_y = 144
-			elif tile_type == TILE_JUNGLE:
-				var vi : int = h % 9
-				if   vi == 0: src_x = 0;  src_y = 0
-				elif vi == 1: src_x = 16; src_y = 0
-				elif vi == 2: src_x = 48; src_y = 0
-				elif vi == 3: src_x = 64; src_y = 0
-				elif vi == 4: src_x = 80; src_y = 0
-				elif vi == 5: src_x = 16; src_y = 16
-				elif vi == 6: src_x = 32; src_y = 16
-				elif vi == 7: src_x = 48; src_y = 16
-				else:         src_x = 64; src_y = 16
-			elif tile_type == TILE_DEEP_FOREST:
-				if h % 2 == 0:
-					src_x = 0; src_y = 32
-				else:
-					src_x = 0; src_y = 16
-			else:
-				src_x = 0; src_y = 0  # CLEARING / fallback
-
-			var src_rect := Rect2i(src_x, src_y, TILE_PX, TILE_PX)
-			var dst_pos := Vector2i(tx * TILE_PX, ty * TILE_PX)
-			terrain_img.blend_rect(tileset_image, src_rect, dst_pos)
+			var r : float; var g : float; var b : float
+			match ttype:
+				TILE_WALL:        # Very dark green border
+					r = 0.09 + n * 0.04;  g = 0.14 + n * 0.06;  b = 0.03 + n * 0.02
+				TILE_BASE_BLUE:   # Blue-grey stone
+					r = 0.24 + n * 0.06;  g = 0.27 + n * 0.06;  b = 0.36 + n * 0.08
+				TILE_BASE_RED:    # Red-grey stone
+					r = 0.36 + n * 0.08;  g = 0.24 + n * 0.06;  b = 0.22 + n * 0.06
+				TILE_LANE:        # Brown dirt path  #7a3f20 → #a4612b
+					r = 0.48 + n * 0.16;  g = 0.25 + n * 0.13;  b = 0.13 + n * 0.04
+				TILE_JUNGLE:      # Bright yellow-green grass  #70801a → #a3b315
+					r = 0.44 + n * 0.20;  g = 0.50 + n * 0.20;  b = 0.09 + n * 0.02
+				TILE_DEEP_FOREST: # Darker muted green
+					r = 0.30 + n * 0.12;  g = 0.37 + n * 0.13;  b = 0.07 + n * 0.02
+				TILE_CLEARING:    # Slightly brighter open grass
+					r = 0.54 + n * 0.14;  g = 0.62 + n * 0.12;  b = 0.08 + n * 0.02
+				_:
+					r = 0.44;  g = 0.50;  b = 0.09
+			terrain_img.set_pixel(px, py, Color(r, g, b))
 
 	var terrain_tex := ImageTexture.create_from_image(terrain_img)
 	terrain_sprite = Sprite2D.new()
 	terrain_sprite.texture = terrain_tex
 	terrain_sprite.centered = false
-	terrain_sprite.scale = Vector2(TILE_SCALE, TILE_SCALE)
+	terrain_sprite.scale = Vector2(MAP_SCALE, MAP_SCALE)  # 12px per map unit
 	terrain_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	terrain_sprite.z_index = -100
 	add_child(terrain_sprite)
@@ -648,21 +629,13 @@ func _create_champion_node(side: String, role: String, champ_data: Dictionary) -
 	sprite.play("idle")
 	node.add_child(sprite)
 
-	# Team circle
-	var circle_img := Image.create(20, 20, false, Image.FORMAT_RGBA8)
+	# Team color indicator: small 4×4 square under the name label (not a big circle)
 	var tcol : Color = TEAM_BLUE if side == "blue" else TEAM_RED
-	for py in range(20):
-		for px in range(20):
-			var ddx : float = float(px) - 10.0
-			var ddy : float = float(py) - 10.0
-			if ddx * ddx + ddy * ddy <= 100.0:
-				circle_img.set_pixel(px, py, tcol)
-	var circle_tex := ImageTexture.create_from_image(circle_img)
-	var circle_spr := Sprite2D.new()
-	circle_spr.texture = circle_tex
-	circle_spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	circle_spr.z_index = -1
-	node.add_child(circle_spr)
+	var dot := ColorRect.new()
+	dot.color = tcol
+	dot.size = Vector2(6, 6)
+	dot.position = Vector2(-3, -80)
+	node.add_child(dot)
 
 	# HP bar background
 	var hp_bg := ColorRect.new()
@@ -712,6 +685,16 @@ func _create_champion_node(side: String, role: String, champ_data: Dictionary) -
 # ─── Main loop ───────────────────────────────────────────────────────────────
 
 func _process(delta: float) -> void:
+	if _screenshot_frames > 0:
+		_screenshot_frames -= 1
+		if _screenshot_frames == 0:
+			var out_path := "C:/Users/baxme/Desktop/MOBA-Manager/godot_screenshot.png"
+			var img := get_viewport().get_texture().get_image()
+			img.save_png(out_path)
+			print("Screenshot saved: ", out_path)
+			get_tree().quit()
+		return
+
 	if ticks.is_empty():
 		return
 
