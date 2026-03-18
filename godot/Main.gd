@@ -545,7 +545,7 @@ func _load_sprite_frames(sprite_key: String) -> SpriteFrames:
 		var ph_tex := ImageTexture.create_from_image(ph_img)
 		frames.add_frame("idle", ph_tex)
 
-	# Run animation — left/right only (run_right + flip scale.x for left)
+	# Run animation — separate left/right animations, NO scale.x flipping ever
 	# Row 1 (y=32) of the run sheet: cols 0-5=walk_left, cols 6-11=walk_right
 	var run_img := Image.new()
 	if run_img.load(sprite_dir + sprite_key + "-run.png") == OK:
@@ -558,13 +558,27 @@ func _load_sprite_frames(sprite_key: String) -> SpriteFrames:
 			atlas.atlas = run_tex
 			atlas.region = Rect2((i + 6) * 32, 32, 32, 32)
 			frames.add_frame("run_right", atlas)
+		frames.add_animation("run_left")
+		frames.set_animation_loop("run_left", true)
+		frames.set_animation_speed("run_left", 10.0)
+		for i in range(6):
+			var atlas := AtlasTexture.new()
+			atlas.atlas = run_tex
+			atlas.region = Rect2(i * 32, 32, 32, 32)
+			frames.add_frame("run_left", atlas)
 	else:
+		# No run sheet — use idle for both directions
 		frames.add_animation("run_right")
 		frames.set_animation_loop("run_right", true)
 		frames.set_animation_speed("run_right", 6.0)
 		var n := frames.get_frame_count("idle")
 		for fi in range(n):
 			frames.add_frame("run_right", frames.get_frame_texture("idle", fi))
+		frames.add_animation("run_left")
+		frames.set_animation_loop("run_left", true)
+		frames.set_animation_speed("run_left", 6.0)
+		for fi in range(n):
+			frames.add_frame("run_left", frames.get_frame_texture("idle", fi))
 
 	# Death animation (optional)
 	var death_img := Image.new()
@@ -781,21 +795,19 @@ func _apply_tick(idx: int) -> void:
 				var dist : float = absf(dx) + absf(dy)
 				var is_moving : bool = dist > 2.0
 
-				# Only flip facing when clearly moving horizontally (threshold=5)
-				# This prevents wiggling when standing still or moving vertically
+				# Update facing only when clearly moving horizontally — prevents jitter
 				if absf(dx) > 5.0:
-					var face_right : bool = dx > 0.0
-					node.set_meta("facing_right", face_right)
+					node.set_meta("facing_right", dx > 0.0)
 
 				var facing_right : bool = node.get_meta("facing_right", true) as bool
-				sprite.scale.x = absf(sprite.scale.x) * (1.0 if facing_right else -1.0)
-
+				# scale.x is NEVER changed — use separate run_left/run_right animations
+				var want_anim : String
 				if is_moving:
-					if sprite.animation != "run_right":
-						sprite.play("run_right")
+					want_anim = "run_right" if facing_right else "run_left"
 				else:
-					if sprite.animation != "idle":
-						sprite.play("idle")
+					want_anim = "idle"
+				if sprite.animation != want_anim:
+					sprite.play(want_anim)
 
 	# HUD update
 	_update_hud(tick_data)
